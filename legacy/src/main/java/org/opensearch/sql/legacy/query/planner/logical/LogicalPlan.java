@@ -37,6 +37,10 @@ public class LogicalPlan implements Plan {
   /** Planner configuration */
   private final Config config;
 
+  public QueryParams getParams() {
+    return params;
+  }
+
   /** Parameters */
   private final QueryParams params;
 

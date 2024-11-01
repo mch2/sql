@@ -23,7 +23,7 @@ def plugin_path = project(':doctest').projectDir
 
 task cloneSqlCli(type: Exec) {
     def repoDir = new File("${project.projectDir}/sql-cli")
-    
+
     if (repoDir.exists()) {
         // Repository already exists, fetch and checkout latest
         commandLine 'git', '-C', repoDir.absolutePath, 'fetch', 'origin', 'main'
@@ -155,6 +155,7 @@ testClusters {
 tasks.register("runRestTestCluster", RunTask) {
     description = 'Runs OpenSearch SQL plugin'
     useCluster testClusters.docTestCluster;
+    systemProperty "java.library.path", "/Users/handalm/Workspace/OpenSearch/libs/datafusion/jni/target/release"
 }
 
 spotless {
