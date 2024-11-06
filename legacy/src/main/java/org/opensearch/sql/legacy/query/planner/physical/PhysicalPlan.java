@@ -23,6 +23,7 @@ import org.opensearch.action.support.PlainActionFuture;
 import org.opensearch.client.node.NodeClient;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.search.SearchHit;
+import org.opensearch.search.SearchHits;
 import org.opensearch.sql.legacy.domain.Field;
 import org.opensearch.sql.legacy.query.join.TableInJoinRequestBuilder;
 import org.opensearch.sql.legacy.query.planner.core.ExecuteParams;
@@ -72,24 +73,30 @@ public class PhysicalPlan implements Plan {
     TableInJoinRequestBuilder left = queryParams.firstRequest();
     TableInJoinRequestBuilder right = queryParams.secondRequest();
 
-    for (String include : left.getRequestBuilder().request().source().fetchSource().includes()) {
-      left.getRequestBuilder().addFetchField(include);
-    }
-    for (String include : right.getRequestBuilder().request().source().fetchSource().includes()) {
-      right.getRequestBuilder().addFetchField(include);
-    }
+//    for (String include : left.getRequestBuilder().request().source().fetchSource().includes()) {
+//      left.getRequestBuilder().addFetchField(include);
+//    }
+//    for (String include : right.getRequestBuilder().request().source().fetchSource().includes()) {
+//      right.getRequestBuilder().addFetchField(include);
+//    }
+
 
     List<List<Map.Entry<Field, Field>>> joinConditions = queryParams.joinConditions();
+    String joinField = joinConditions.get(0).get(0).getKey().getName();
+    right.getRequestBuilder().addFetchField(joinField);
+    left.getRequestBuilder().addFetchField(joinField);
     NodeClient client = (NodeClient) params.get(ExecuteParams.ExecuteParamType.CLIENT);
     CompletableFuture<JoinResponse> future = new CompletableFuture<>();
     client.executeLocally(StreamedJoinAction.INSTANCE, new JoinRequest(
             left.getRequestBuilder().request(),
             right.getRequestBuilder().request(),
-            joinConditions.get(0).get(0).getKey().getName()
+            joinField,
+            true
     ), new ActionListener<>() {
         @Override
         public void onResponse(JoinResponse joinResponse) {
           System.out.println("THE TICKET:");
+          System.out.println("Got responses: " + joinResponse.getHits().getHits().length);
           System.out.println(new String(joinResponse.getTicket().getBytes(), StandardCharsets.UTF_8));
             future.complete(joinResponse);
         }
@@ -100,18 +107,22 @@ public class PhysicalPlan implements Plan {
         }
     });
       try {
-          future.get();
+        JoinResponse joinResponse = future.get();
+        SearchHits hits = joinResponse.getHits();
+        List<SearchHit> list = Arrays.asList(hits.getHits());
+        System.out.println("SearchHit example: " + list.get(0).getSourceAsMap());
+        return list;
       } catch (InterruptedException | ExecutionException e) {
           throw new RuntimeException(e);
       }
-
-    try (PhysicalOperator<SearchHit> op = root) {
-      return doExecutePlan(op, params);
-    } catch (Exception e) {
-      LOG.error("Error happened during execution", e);
-      // Runtime error or circuit break. Should we return partial result to customer?
-      throw new IllegalStateException("Error happened during execution", e);
-    }
+//
+//    try (PhysicalOperator<SearchHit> op = root) {
+//      return doExecutePlan(op, params);
+//    } catch (Exception e) {
+//      LOG.error("Error happened during execution", e);
+//      // Runtime error or circuit break. Should we return partial result to customer?
+//      throw new IllegalStateException("Error happened during execution", e);
+//    }
   }
 
   /** Reject physical plan execution of new query request if unhealthy */
