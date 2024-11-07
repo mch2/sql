@@ -91,6 +91,8 @@ public class PhysicalPlan implements Plan {
             left.getRequestBuilder().request(),
             right.getRequestBuilder().request(),
             joinField,
+            left.getAlias(),
+            right.getAlias(),
             true
     ), new ActionListener<>() {
         @Override
