@@ -409,7 +409,7 @@ public class AggregateAnalyzer {
         } else {
           yield Pair.of(
               AggregationBuilders.topHits(aggFieldName)
-                  .fetchSource(helper.inferNamedField(args.getFirst()).getRootName(), null)
+                  .fetchField(helper.inferNamedField(args.getFirst()).getReferenceForTermQuery())
                   .size(1)
                   .from(0)
                   .sort(
@@ -428,7 +428,7 @@ public class AggregateAnalyzer {
         } else {
           yield Pair.of(
               AggregationBuilders.topHits(aggFieldName)
-                  .fetchSource(helper.inferNamedField(args.getFirst()).getRootName(), null)
+                  .fetchField(helper.inferNamedField(args.getFirst()).getReferenceForTermQuery())
                   .size(1)
                   .from(0)
                   .sort(
@@ -451,20 +451,20 @@ public class AggregateAnalyzer {
           new StatsParser(ExtendedStats::getStdDeviationPopulation, aggFieldName));
       case ARG_MAX -> Pair.of(
           AggregationBuilders.topHits(aggFieldName)
-              .fetchSource(helper.inferNamedField(args.getFirst()).getRootName(), null)
+              .fetchField(helper.inferNamedField(args.getFirst()).getReferenceForTermQuery())
               .size(1)
               .from(0)
               .sort(
-                  helper.inferNamedField(args.get(1)).getRootName(),
+                  helper.inferNamedField(args.get(1)).getReferenceForTermQuery(),
                   org.opensearch.search.sort.SortOrder.DESC),
           new ArgMaxMinParser(aggFieldName));
       case ARG_MIN -> Pair.of(
           AggregationBuilders.topHits(aggFieldName)
-              .fetchSource(helper.inferNamedField(args.getFirst()).getRootName(), null)
+              .fetchField(helper.inferNamedField(args.getFirst()).getReferenceForTermQuery())
               .size(1)
               .from(0)
               .sort(
-                  helper.inferNamedField(args.get(1)).getRootName(),
+                  helper.inferNamedField(args.get(1)).getReferenceForTermQuery(),
                   org.opensearch.search.sort.SortOrder.ASC),
           new ArgMaxMinParser(aggFieldName));
       case OTHER_FUNCTION -> {
@@ -473,7 +473,7 @@ public class AggregateAnalyzer {
         yield switch (functionName) {
           case TAKE -> Pair.of(
               AggregationBuilders.topHits(aggFieldName)
-                  .fetchSource(helper.inferNamedField(args.getFirst()).getRootName(), null)
+                  .fetchField(helper.inferNamedField(args.getFirst()).getReferenceForTermQuery())
                   .size(helper.inferValue(args.getLast(), Integer.class))
                   .from(0),
               new TopHitsParser(aggFieldName));
@@ -481,7 +481,8 @@ public class AggregateAnalyzer {
             TopHitsAggregationBuilder firstBuilder =
                 AggregationBuilders.topHits(aggFieldName).size(1).from(0);
             if (!args.isEmpty()) {
-              firstBuilder.fetchSource(helper.inferNamedField(args.getFirst()).getRootName(), null);
+              firstBuilder.fetchField(
+                  helper.inferNamedField(args.getFirst()).getReferenceForTermQuery());
             }
             yield Pair.of(firstBuilder, new TopHitsParser(aggFieldName, true));
           }
@@ -492,7 +493,8 @@ public class AggregateAnalyzer {
                     .from(0)
                     .sort("_doc", org.opensearch.search.sort.SortOrder.DESC);
             if (!args.isEmpty()) {
-              lastBuilder.fetchSource(helper.inferNamedField(args.getFirst()).getRootName(), null);
+              lastBuilder.fetchField(
+                  helper.inferNamedField(args.getFirst()).getReferenceForTermQuery());
             }
             yield Pair.of(lastBuilder, new TopHitsParser(aggFieldName, true));
           }
