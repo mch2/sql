@@ -53,8 +53,6 @@ import org.opensearch.search.SearchModule;
 import org.opensearch.search.builder.PointInTimeBuilder;
 import org.opensearch.search.builder.SearchSourceBuilder;
 import org.opensearch.search.sort.FieldSortBuilder;
-//import org.opensearch.search.sort.ShardDocSortBuilder;
-import org.opensearch.search.sort.SortBuilders;
 import org.opensearch.sql.calcite.utils.CalciteToolsHelper;
 import org.opensearch.sql.expression.function.BuiltinFunctionName;
 import org.opensearch.sql.opensearch.data.value.OpenSearchExprValueFactory;
@@ -221,7 +219,7 @@ public class OpenSearchQueryRequest implements OpenSearchRequest {
         // get the value before set searchDone = true
         boolean isCountAggRequest = isCountAggRequest();
         searchDone = true;
-        sourceBuilder.queryPlanIR(convertToSubstraitAndSerialize());
+        sourceBuilder.queryPlanIR(convertToSubstraitAndSerialize(exprValueFactory));
         return new OpenSearchResponse(
             searchAction.apply(
                 new SearchRequest().indices(indexName.getIndexNames()).source(sourceBuilder)),
@@ -243,6 +241,7 @@ public class OpenSearchQueryRequest implements OpenSearchRequest {
               SearchHits.empty(), exprValueFactory, includes, isCountAggRequest());
     } else {
       this.sourceBuilder.pointInTimeBuilder(new PointInTimeBuilder(this.pitId));
+      sourceBuilder.queryPlanIR(convertToSubstraitAndSerialize(exprValueFactory));
       this.sourceBuilder.timeout(cursorKeepAlive);
       // check for search after
       if (searchAfter != null) {
@@ -343,7 +342,7 @@ public class OpenSearchQueryRequest implements OpenSearchRequest {
     }
   }
 
-    public static byte[] convertToSubstraitAndSerialize() {
+    public static byte[] convertToSubstraitAndSerialize(OpenSearchExprValueFactory index) {
         RelNode relNode = CalciteToolsHelper.OpenSearchRelRunners.getCurrentRelNode();
 
         LOGGER.info("Calcite Logical Plan before Conversion\n {}", RelOptUtil.toString(relNode));
@@ -363,7 +362,7 @@ public class OpenSearchQueryRequest implements OpenSearchRequest {
         SimpleExtension.ExtensionCollection EXTENSIONS = SimpleExtension.loadDefaults();
         // RelRoot represents the root of a relational query tree with metadata
         RelRoot root = RelRoot.of(relNode, SqlKind.SELECT);
-        // TODO: Explore better way to do this visiting, how to pass UDTs
+        // Need to use the Visitor's constructor to pass in custom function signatures for UDF when required.
         Plan.Root substraitRoot = SubstraitRelVisitor.convert(root, EXTENSIONS);
         // Plan contains one or more roots (query entry points) and shared extensions
         // addRoots() adds the converted relation tree as a query root
@@ -665,6 +664,5 @@ public class OpenSearchQueryRequest implements OpenSearchRequest {
             }
         });
     }
-
 
 }

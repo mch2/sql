@@ -246,7 +246,7 @@ public class OpenSearchExprValueFactory {
    * In OpenSearch, it is possible field doesn't have type definition in mapping. but has empty
    * value. For example, {"empty_field": []}.
    */
-  private Optional<ExprType> type(String field) {
+  public Optional<ExprType> type(String field) {
     return Optional.ofNullable(typeMapping.get(field));
   }
 
