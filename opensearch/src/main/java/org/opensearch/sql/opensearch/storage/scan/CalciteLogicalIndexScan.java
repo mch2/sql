@@ -330,9 +330,7 @@ public class CalciteLogicalIndexScan extends AbstractCalciteIndexScan {
       }
       return newScan;
     } catch (Exception e) {
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("Cannot pushdown the aggregate {}", aggregate, e);
-      }
+        LOG.info("Cannot pushdown the aggregate {}", aggregate, e);
     }
     return null;
   }
