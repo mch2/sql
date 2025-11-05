@@ -331,7 +331,7 @@ public class AggPushDownAction implements OSRequestBuilderAction {
     if (subAggregations.isEmpty()) {
       metricBuilder.addAggregator(AggregationBuilders.count(path).field("_index"));
     } else {
-      metricBuilder.addAggregator(subAggregations.stream().toList().get(0));
+      subAggregations.forEach(metricBuilder::addAggregator);
     }
     aggregationBuilder.subAggregations(metricBuilder);
     return aggregationBuilder;
