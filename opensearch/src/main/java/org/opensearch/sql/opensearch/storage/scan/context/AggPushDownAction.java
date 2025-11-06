@@ -153,7 +153,7 @@ public class AggPushDownAction implements OSRequestBuilderAction {
       } else {
         if (composite.sources().stream()
             .allMatch(
-                src -> src instanceof TermsValuesSourceBuilder terms && !terms.missingBucket())) {
+                src -> src instanceof TermsValuesSourceBuilder terms /*&& !terms.missingBucket()*/)) { // FIXME: Needs Optimised Index setting check
           // multi-term agg
           MultiTermsAggregationBuilder multiTermsBuilder =
               buildMultiTermsAggregationBuilder(composite);
