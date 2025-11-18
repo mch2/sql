@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.opensearch.search.aggregations.Aggregation;
 import org.opensearch.search.aggregations.Aggregations;
 import org.opensearch.sql.common.utils.StringUtils;
+import org.opensearch.sql.opensearch.request.OpenSearchQueryRequest;
 
 /** Parse multiple metrics in one bucket. */
 @Getter
@@ -50,6 +51,9 @@ public class MetricParserHelper {
     for (Aggregation aggregation : aggregations) {
       if (metricParserMap.containsKey(aggregation.getName())) {
         resultMap.putAll(metricParserMap.get(aggregation.getName()).parse(aggregation));
+      } else if (OpenSearchQueryRequest.INJECTED_COUNT_AGGREGATE_NAME.equals(aggregation.getName())) {
+        // Skip _count field added for Substrait/DataFusion compatibility
+        continue;
       } else {
         throw new RuntimeException(
             StringUtils.format(
