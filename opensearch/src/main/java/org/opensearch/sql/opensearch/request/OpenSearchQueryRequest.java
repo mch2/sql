@@ -37,7 +37,6 @@ import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlLibraryOperators;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -893,8 +892,7 @@ public class OpenSearchQueryRequest implements OpenSearchRequest {
                             return LogicalProject.create(input, project.getHints(), newProjects, newNames);
                         }
 
-                        return LogicalProject.create(
-                                input, project.getHints(), project.getProjects(), project.getRowType());
+                        return project;
                     }
                 });
     }
