@@ -195,9 +195,10 @@ public class SQLPlugin extends Plugin
    *
    * <p>The {@link RestUnifiedQueryAction} is built lazily on the first request because the
    * analytics-engine {@code QueryPlanExecutor} is published into {@link AnalyticsExecutorHolder} by
-   * {@code TransportPPLQueryAction}'s {@code @Inject} constructor — which fires after the Node
-   * Guice injector is built, i.e. after {@code getRestHandlers}. If the executor is still
-   * unavailable when a SQL request arrives, the router falls through to the legacy SQL path.
+   * {@code SQLAnalyticsFrontEndExtension#setAnalyticsServices} — which fires after the Node Guice
+   * injector is built (i.e. after {@code getRestHandlers}) and only when analytics-engine is
+   * installed. If the executor is still unavailable when a SQL request arrives, the router falls
+   * through to the legacy SQL path.
    */
   private BiFunction<SQLQueryRequest, RestChannel, Boolean> createSqlAnalyticsRouter() {
     final RestUnifiedQueryAction[] cached = new RestUnifiedQueryAction[1];

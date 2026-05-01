@@ -13,11 +13,9 @@ import static org.opensearch.sql.protocol.response.format.JsonResponseFormatter.
 import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Supplier;
-import org.apache.calcite.rel.RelNode;
 import org.opensearch.action.ActionRequest;
 import org.opensearch.action.support.ActionFilters;
 import org.opensearch.action.support.HandledTransportAction;
-import org.opensearch.analytics.exec.QueryPlanExecutor;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.inject.Guice;
 import org.opensearch.common.inject.Inject;
@@ -62,7 +60,9 @@ public class TransportPPLQueryAction
 
   private final Supplier<Boolean> pplEnabled;
 
-  private final RestUnifiedQueryAction unifiedQueryHandler;
+  private final NodeClient client;
+  private final ClusterService clusterService;
+  private volatile RestUnifiedQueryAction unifiedQueryHandler;
 
   /** Constructor of TransportPPLQueryAction. */
   @Inject
@@ -72,9 +72,11 @@ public class TransportPPLQueryAction
       NodeClient client,
       ClusterService clusterService,
       DataSourceServiceImpl dataSourceService,
-      org.opensearch.common.settings.Settings clusterSettings,
-      QueryPlanExecutor<RelNode, Iterable<Object[]>> queryPlanExecutor) {
+      org.opensearch.common.settings.Settings clusterSettings) {
     super(PPLQueryAction.NAME, transportService, actionFilters, TransportPPLQueryRequest::new);
+
+    this.client = client;
+    this.clusterService = clusterService;
 
     ModulesBuilder modules = new ModulesBuilder();
     modules.add(new OpenSearchPluginModule());
@@ -86,9 +88,6 @@ public class TransportPPLQueryAction
           b.bind(DataSourceService.class).toInstance(dataSourceService);
         });
     this.injector = Guice.createInjector(modules);
-    AnalyticsExecutorHolder.set(queryPlanExecutor);
-    this.unifiedQueryHandler =
-        new RestUnifiedQueryAction(client, clusterService, queryPlanExecutor);
     this.pplEnabled =
         () ->
             MULTI_ALLOW_EXPLICIT_INDEX.get(clusterSettings)
@@ -96,6 +95,25 @@ public class TransportPPLQueryAction
                     injector
                         .getInstance(org.opensearch.sql.common.setting.Settings.class)
                         .getSettingValue(Settings.Key.PPL_ENABLED);
+  }
+
+  /**
+   * Resolves the analytics-engine-backed handler lazily. Returns {@code null} when analytics-engine
+   * is not installed (the SPI callback never fires, so {@link AnalyticsExecutorHolder#get()} stays
+   * null) — callers fall through to the legacy PPL pipeline.
+   */
+  private RestUnifiedQueryAction unifiedQueryHandler() {
+    RestUnifiedQueryAction cached = unifiedQueryHandler;
+    if (cached != null) {
+      return cached;
+    }
+    var executor = AnalyticsExecutorHolder.get();
+    if (executor == null) {
+      return null;
+    }
+    cached = new RestUnifiedQueryAction(client, clusterService, executor);
+    unifiedQueryHandler = cached;
+    return cached;
   }
 
   /**
@@ -134,16 +152,19 @@ public class TransportPPLQueryAction
     QueryContext.setProfile(transformedRequest.profile());
     ActionListener<TransportPPLQueryResponse> clearingListener = wrapWithProfilingClear(listener);
 
-    // Route to analytics engine for non-Lucene (e.g., Parquet-backed) indices
-    if (unifiedQueryHandler.isAnalyticsIndex(transformedRequest.getRequest(), QueryType.PPL)) {
+    // Route to analytics engine for non-Lucene (e.g., Parquet-backed) indices.
+    // Skips when analytics-engine isn't installed (handler() returns null).
+    RestUnifiedQueryAction handler = unifiedQueryHandler();
+    if (handler != null
+        && handler.isAnalyticsIndex(transformedRequest.getRequest(), QueryType.PPL)) {
       if (transformedRequest.isExplainRequest()) {
-        unifiedQueryHandler.explain(
+        handler.explain(
             transformedRequest.getRequest(),
             QueryType.PPL,
             transformedRequest.mode(),
             createExplainResponseListener(transformedRequest, clearingListener));
       } else {
-        unifiedQueryHandler.execute(
+        handler.execute(
             transformedRequest.getRequest(),
             QueryType.PPL,
             transformedRequest.profile(),
