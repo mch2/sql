@@ -36,8 +36,9 @@ public final class PPLReturnTypes {
   public static SqlReturnTypeInference TIME_APPLY_RETURN_TYPE =
       opBinding -> {
         RelDataType temporalType = opBinding.getOperandType(0);
-        if (ExprCoreType.TIME.equals(
-            OpenSearchTypeFactory.convertRelDataTypeToExprType(temporalType))) {
+        // isTimeExprType so a TimeOnlyType column (analytics-route TIMESTAMP-backed time marker) is
+        // recognized as TIME; otherwise ADDTIME/SUBTIME on a time column lose the TIME return type.
+        if (OpenSearchTypeFactory.isTimeExprType(temporalType)) {
           return UserDefinedFunctionUtils.NULLABLE_TIME_UDT;
         }
         return UserDefinedFunctionUtils.NULLABLE_TIMESTAMP_UDT;

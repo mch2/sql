@@ -47,7 +47,9 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.opensearch.analytics.schema.BinaryType;
+import org.opensearch.analytics.schema.DateOnlyType;
 import org.opensearch.analytics.schema.IpType;
+import org.opensearch.analytics.schema.TimeOnlyType;
 import org.opensearch.sql.calcite.type.AbstractExprRelDataType;
 import org.opensearch.sql.calcite.type.ExprBinaryType;
 import org.opensearch.sql.calcite.type.ExprDateType;
@@ -278,6 +280,23 @@ public class OpenSearchTypeFactory extends JavaTypeFactoryImpl {
   }
 
   /**
+   * Whether {@code type} represents a DATE for the purpose of operand-conditional return-type
+   * inference (e.g. {@code ADDDATE(date, n)} returns DATE only when the base is a date). Recognizes
+   * both the SQL-plugin DATE UDT (via {@link #convertRelDataTypeToExprType}) and the analytics-route
+   * {@link DateOnlyType} column marker, which is {@code TIMESTAMP}-backed and would otherwise be
+   * misread as TIMESTAMP. Kept separate from {@link #convertRelDataTypeToExprType} so it isn't on
+   * the general planner path that round-trips through {@link #convertExprTypeToRelDataType}.
+   */
+  public static boolean isDateExprType(RelDataType type) {
+    return type instanceof DateOnlyType || convertRelDataTypeToExprType(type) == ExprCoreType.DATE;
+  }
+
+  /** TIME counterpart of {@link #isDateExprType} — recognizes the {@link TimeOnlyType} marker. */
+  public static boolean isTimeExprType(RelDataType type) {
+    return type instanceof TimeOnlyType || convertRelDataTypeToExprType(type) == ExprCoreType.TIME;
+  }
+
+  /**
    * Result-schema-only variant of {@link #convertRelDataTypeToExprType} that recognizes the
    * analytics-engine {@link IpType} / {@link BinaryType} markers as {@link ExprCoreType#IP} /
    * {@link ExprCoreType#BINARY}.
@@ -292,6 +311,14 @@ public class OpenSearchTypeFactory extends JavaTypeFactoryImpl {
     }
     if (type instanceof BinaryType) {
       return BINARY;
+    }
+    // Sandbox UDT markers for format-classified date columns (Timestamp(ms)-backed wire,
+    // user-visible label downgraded to date / time).
+    if (type instanceof DateOnlyType) {
+      return DATE;
+    }
+    if (type instanceof TimeOnlyType) {
+      return TIME;
     }
     return convertRelDataTypeToExprType(type);
   }
