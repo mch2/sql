@@ -12,6 +12,7 @@ import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
@@ -19,7 +20,9 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 import org.opensearch.analytics.exec.QueryPlanExecutor;
 import org.opensearch.analytics.exec.profile.ProfiledResult;
 import org.opensearch.analytics.schema.BinaryType;
+import org.opensearch.analytics.schema.DateOnlyType;
 import org.opensearch.analytics.schema.IpType;
+import org.opensearch.analytics.schema.TimeOnlyType;
 import org.opensearch.common.network.InetAddresses;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.sql.ast.statement.ExplainMode;
@@ -46,6 +49,17 @@ import org.opensearch.sql.planner.physical.PhysicalPlan;
  * analytics engine, and converts the raw results into {@link QueryResponse}.
  */
 public class AnalyticsExecutionEngine implements ExecutionEngine {
+
+  // TIME-typed columns round-trip through Timestamp and arrive in list elements as
+  // "1970-01-01[ T]HH:mm:ss[.fraction]"; analytics-engine post-processes scalars but
+  // list-aggregation elements bypass that path (see list_merge in DataFusion).
+  private static final Pattern EPOCH_DATE_TIME_PREFIX =
+      Pattern.compile("^1970-01-01[ T](\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?)$");
+
+  // DATE-typed columns whose wire is Timestamp(ms) arrive as "YYYY-MM-DD HH:mm:ss";
+  // when the column carries a DateOnlyType marker we strip the time suffix.
+  private static final Pattern DATE_WITH_MIDNIGHT_TIME =
+      Pattern.compile("^(\\d{4}-\\d{2}-\\d{2})[ T]\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?$");
 
   private final QueryPlanExecutor<RelNode, Iterable<Object[]>> planExecutor;
 
@@ -234,7 +248,42 @@ public class AnalyticsExecutionEngine implements ExecutionEngine {
         return ExprValueUtils.stringValue(Base64.getEncoder().encodeToString(bytes));
       }
     }
+    // span(date-typed) returns Timestamp(ms) wire with midnight time; render as YYYY-MM-DD only.
+    if (type instanceof DateOnlyType && value instanceof String s) {
+      var m = DATE_WITH_MIDNIGHT_TIME.matcher(s);
+      if (m.matches()) {
+        return ExprValueUtils.stringValue(m.group(1));
+      }
+    }
+    // span(time-typed) returns Timestamp(ms) wire with 1970-01-01 prefix; render as HH:mm:ss only.
+    if (type instanceof TimeOnlyType && value instanceof String s) {
+      var m = EPOCH_DATE_TIME_PREFIX.matcher(s);
+      if (m.matches()) {
+        return ExprValueUtils.stringValue(m.group(1));
+      }
+    }
+    // List elements that look like a sentinel-epoch-prefixed time render as HH:mm:ss only.
+    if (value instanceof List<?> list) {
+      return ExprValueUtils.collectionValue(stripEpochDatePrefixInList(list));
+    }
     return ExprValueUtils.fromObjectValue(value);
+  }
+
+  /**
+   * Returns a copy of {@code list} with each "1970-01-01[ T]HH:mm:ss[.fraction]" string replaced by
+   * the time portion only; non-matching elements pass through unchanged.
+   */
+  private static List<Object> stripEpochDatePrefixInList(List<?> list) {
+    List<Object> out = new ArrayList<>(list.size());
+    for (Object element : list) {
+      if (element instanceof String s) {
+        var m = EPOCH_DATE_TIME_PREFIX.matcher(s);
+        out.add(m.matches() ? m.group(1) : s);
+      } else {
+        out.add(element);
+      }
+    }
+    return out;
   }
 
   private Schema buildSchema(List<RelDataTypeField> fields) {

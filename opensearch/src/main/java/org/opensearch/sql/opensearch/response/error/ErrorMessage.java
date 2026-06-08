@@ -33,7 +33,21 @@ public class ErrorMessage {
     this.details = fetchDetails();
   }
 
+  /**
+   * "<type>:<value> in unsupported format, please use '<pattern>'" — sandbox/legacy parse-failure
+   * marker.
+   */
+  private static final java.util.regex.Pattern UNSUPPORTED_FORMAT_HINT =
+      java.util.regex.Pattern.compile(
+          "^(date|time|timestamp):.+ in unsupported format, please use '.+'");
+
   private String fetchType() {
+    // remap the engine's IAE / StreamException to ExpressionEvaluationException when the
+    // message carries the typed format-hint signature, so callers see the legacy SQL-plugin class
+    String message = exception.getLocalizedMessage();
+    if (message != null && UNSUPPORTED_FORMAT_HINT.matcher(message).find()) {
+      return "ExpressionEvaluationException";
+    }
     return exception.getClass().getSimpleName();
   }
 
