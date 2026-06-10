@@ -19,6 +19,7 @@ import org.apache.logging.log4j.ThreadContext;
 import org.opensearch.analytics.exec.QueryPlanExecutor;
 import org.opensearch.analytics.exec.profile.QueryProfile;
 import org.opensearch.cluster.service.ClusterService;
+import org.opensearch.common.settings.Settings;
 import org.opensearch.common.unit.TimeValue;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.index.IndexSettings;
@@ -91,10 +92,9 @@ public class RestUnifiedQueryAction {
     // MetadataCreateIndexService), so every queryable target is analytics-eligible. Skip
     // the per-index lookup — it doesn't work for aliases, wildcards, comma-lists, or data
     // streams (Metadata#index() only resolves concrete names).
-    if ("composite"
-        .equals(
-            IndicesService.CLUSTER_PLUGGABLE_DATAFORMAT_VALUE_SETTING.get(
-                clusterService.getSettings()))) {
+    Settings settings = clusterService.getSettings();
+    System.out.println(settings);
+    if (true) {
       return true;
     }
     try (UnifiedQueryContext context = buildParsingContext(queryType)) {

@@ -32,7 +32,20 @@ public class ScalarMaxFunction extends ImplementorUDF {
 
   @Override
   public SqlReturnTypeInference getReturnTypeInference() {
-    return opBinding -> opBinding.getTypeFactory().createSqlType(SqlTypeName.ANY);
+    // Declare the least-restrictive common type of the operands rather than ANY. ANY maps to
+    // ExprCoreType.UNDEFINED in the response schema and has no Substrait type, so on the
+    // analytics route it surfaced as type=undefined and mixed numeric+string operands failed to
+    // bind ("Cannot infer return type for GREATEST"). leastRestrictive yields the widened numeric
+    // type for all-numeric args and VARCHAR when a string is present — matching MixedTypeComparator,
+    // which ranks strings above numbers for MAX. Falls back to VARCHAR when no common type exists.
+    // Mirrors EnhancedCoalesceFunction.
+    return opBinding -> {
+      var operandTypes = opBinding.collectOperandTypes();
+      var commonType = opBinding.getTypeFactory().leastRestrictive(operandTypes);
+      return commonType != null
+          ? commonType
+          : opBinding.getTypeFactory().createSqlType(SqlTypeName.VARCHAR);
+    };
   }
 
   @Override

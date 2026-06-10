@@ -2,7 +2,7 @@
   "mappings": {
     "properties": {
       "comments": {
-        "type": "nested",
+        "type": "object",
         "properties": {
           "date": {
             "type": "date"
@@ -34,10 +34,10 @@
         }
       },
       "projects": {
-        "type": "nested",
+        "type": "object",
         "properties": {
           "address": {
-            "type": "nested",
+            "type": "object",
             "properties": {
               "city": {
                 "type": "text",

@@ -64,8 +64,15 @@ public class TestUtils {
      */
     public static final String ENABLED_PROP = "tests.analytics.parquet_indices";
 
+    /** Override the parquet-backed index shard count (default 1) via -Dtests.analytics.shards=N. */
+    public static final String SHARDS_PROP = "tests.analytics.shards";
+
     public static boolean isEnabled() {
       return Boolean.parseBoolean(System.getProperty(ENABLED_PROP, "false"));
+    }
+
+    public static int shards() {
+      return Integer.parseInt(System.getProperty(SHARDS_PROP, "1"));
     }
 
     /**
@@ -80,13 +87,49 @@ public class TestUtils {
           jsonObject.has("settings") ? jsonObject.getJSONObject("settings") : new JSONObject();
       JSONObject indexSettings =
           settings.has("index") ? settings.getJSONObject("index") : new JSONObject();
-      indexSettings.put("number_of_shards", 1);
+      indexSettings.put("number_of_shards", shards());
       indexSettings.put("pluggable.dataformat.enabled", true);
       indexSettings.put("pluggable.dataformat", "composite");
       indexSettings.put("composite.primary_data_format", "parquet");
       indexSettings.put("composite.secondary_data_formats", new org.json.JSONArray().put("lucene"));
       settings.put("index", indexSettings);
       jsonObject.put("settings", settings);
+    }
+
+    /**
+     * Set the composite-store defaults at the cluster level so even indices auto-created by a raw
+     * document {@code PUT} (which bypass {@link #applyIndexCreationSettings}) are parquet-backed.
+     * Otherwise such an index inherits only the composite value — so it routes to the analytics
+     * engine — but not the {@code .enabled} flag, leaving it stored as a plain-Lucene {@code
+     * EngineBackedIndexer} that fails at query time. No-op when disabled; idempotent.
+     */
+    public static void applyClusterSettings(RestClient client) {
+      if (!isEnabled()) {
+        return;
+      }
+      JSONObject persistent =
+          new JSONObject()
+              .put("cluster.pluggable.dataformat.enabled", true)
+              .put("cluster.pluggable.dataformat", "composite")
+              .put("cluster.composite.primary_data_format", "parquet")
+              .put("cluster.composite.secondary_data_formats", new org.json.JSONArray().put("lucene"));
+      Request request = new Request("PUT", "/_cluster/settings");
+      request.setJsonEntity(new JSONObject().put("persistent", persistent).toString());
+      performRequest(client, request);
+
+      // Index template so raw-PUT indices (which bypass applyIndexCreationSettings) get the
+      // configured shard count. Lowest priority so per-index settings still win.
+      JSONObject template =
+          new JSONObject()
+              .put("index_patterns", new org.json.JSONArray().put("*"))
+              .put("priority", 0)
+              .put(
+                  "template",
+                  new JSONObject()
+                      .put("settings", new JSONObject().put("number_of_shards", shards())));
+      Request tmpl = new Request("PUT", "/_index_template/analytics_qa_shards");
+      tmpl.setJsonEntity(template.toString());
+      performRequest(client, tmpl);
     }
 
     /**

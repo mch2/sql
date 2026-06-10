@@ -5,7 +5,7 @@
         "type": "date"
       },
       "projects": {
-        "type": "nested"
+        "type": "object"
       }
     }
   }

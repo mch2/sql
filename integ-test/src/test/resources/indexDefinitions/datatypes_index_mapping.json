@@ -11,7 +11,8 @@
         "type": "text"
       },
       "binary_value": {
-        "type": "binary"
+        "type": "binary",
+        "store": true
       },
       "date_value": {
         "type" : "date",
@@ -34,10 +35,7 @@
         }
       },
       "nested_value": {
-        "type": "nested"
-      },
-      "geo_point_value": {
-        "type": "geo_point"
+        "type": "object"
       }
     }
   }

@@ -2,13 +2,13 @@
   "mappings": {
     "properties": {
       "message": {
-        "type": "nested",
+        "type": "object",
         "properties": {
           "info": {
             "type": "keyword"
           },
           "author": {
-            "type": "nested",
+            "type": "object",
             "properties": {
               "name": {
                 "type": "keyword",
@@ -20,7 +20,7 @@
                 }
               },
               "address": {
-                "type": "nested",
+                "type": "object",
                 "properties": {
                   "street": {
                     "type": "keyword"

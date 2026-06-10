@@ -2,19 +2,19 @@
   "mappings": {
     "properties": {
       "author": {
-        "type": "nested",
+        "type": "object",
         "properties": {
           "name": {
             "type": "keyword"
           },
           "books": {
-            "type": "nested",
+            "type": "object",
             "properties": {
               "title": {
                 "type": "keyword"
               },
               "reviews": {
-                "type": "nested",
+                "type": "object",
                 "properties": {
                   "rating": {
                     "type": "integer"

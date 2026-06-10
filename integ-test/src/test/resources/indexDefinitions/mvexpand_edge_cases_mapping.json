@@ -3,7 +3,7 @@
     "properties": {
       "username": { "type": "keyword" },
       "skills": {
-        "type": "nested",
+        "type": "object",
         "properties": {
           "name": { "type": "keyword" },
           "level": { "type": "keyword" }

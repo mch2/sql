@@ -23,7 +23,7 @@
         }
       },
       "projects": {
-        "type": "nested",
+        "type": "object",
         "properties": {
           "name": {
             "type": "keyword"

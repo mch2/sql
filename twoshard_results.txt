@@ -1,0 +1,581 @@
+2-SHARD RUN vs localhost:9200 — 36 PASS / 93 FAIL of 129
+
+===== PASSED (36) =====
+  org.opensearch.sql.calcite.remote.CalciteAddColTotalsCommandIT.testAddColTotalsWithLabelAndLabelField
+  org.opensearch.sql.calcite.remote.CalciteMVAppendFunctionIT.testMvappendWithComplexExpression
+  org.opensearch.sql.calcite.remote.CalciteMultiMatchIT.test_multi_match
+  org.opensearch.sql.calcite.remote.CalciteMultiMatchIT.test_multi_match_all_params
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationIT.testBooleanNestedFieldByGroup
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationIT.testFirstAggregationOnTextField
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationIT.testFirstLastWithDeepNestedField
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationIT.testFirstLastWithDeepNestedFieldByGroup
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationIT.testFirstLastWithNullValues
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationIT.testLastAggregationOnTextField
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationIT.testScriptWithLastFirstTakeAggregation
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationIT.testTextTypeWithLastFirstTakeAggregation
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationPaginatingIT.testBooleanNestedFieldByGroup
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationPaginatingIT.testFirstAggregation
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationPaginatingIT.testFirstLastDifferentFields
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationPaginatingIT.testFirstLastMixedFields
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationPaginatingIT.testFirstLastWithDeepNestedFieldByGroup
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationPaginatingIT.testFirstLastWithNullValues
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationPaginatingIT.testLastAggregationOnTextField
+  org.opensearch.sql.calcite.remote.CalcitePPLAppendCommandIT.testAppend
+  org.opensearch.sql.calcite.remote.CalcitePPLEnhancedCoalesceIT.testCoalesceTypeCoercionWithMixedTypes
+  org.opensearch.sql.calcite.remote.CalcitePPLEnhancedCoalesceIT.testCoalesceWithNullLiteralAndIntegerField
+  org.opensearch.sql.calcite.remote.CalcitePPLEnhancedCoalesceIT.testCoalesceWithSpaceString
+  org.opensearch.sql.calcite.remote.CalcitePPLExistsSubqueryIT.testIssue3566
+  org.opensearch.sql.calcite.remote.CalcitePPLPatternsIT.testSimplePatternAggregationMode_WithGroupBy_ShowNumberedToken
+  org.opensearch.sql.calcite.remote.CalcitePPLPatternsIT.testSimplePatternLabelMode_ShowNumberedToken
+  org.opensearch.sql.calcite.remote.CalcitePPLScalarSubqueryIT.testUncorrelatedScalarSubqueryInSelectAndInFilter
+  org.opensearch.sql.calcite.remote.CalcitePPLStringBuiltinFunctionIT.testReverse
+  org.opensearch.sql.calcite.remote.CalcitePPLStringBuiltinFunctionIT.testTrim
+  org.opensearch.sql.calcite.remote.CalciteQueryStringIT.all_fields_test
+  org.opensearch.sql.calcite.remote.CalciteQueryStringIT.all_params_test
+  org.opensearch.sql.calcite.remote.CalciteQueryStringIT.mandatory_params_test
+  org.opensearch.sql.calcite.remote.CalciteSimpleQueryStringIT.test_simple_query_string
+  org.opensearch.sql.calcite.remote.CalciteSimpleQueryStringIT.test_simple_query_string_all_params
+  org.opensearch.sql.ppl.TrailingPipeIT.testEmptyPipesAndTrailingPipe
+  org.opensearch.sql.ppl.TrailingPipeIT.testMultipleEmptyPipes
+
+===== FAILED (93) =====
+  org.opensearch.sql.calcite.remote.CalciteAddTotalsCommandIT.testAddTotalsWithLabelAndLabelField
+      java.lang.AssertionError: expected:<101.0> but was:<103.0>
+  org.opensearch.sql.calcite.remote.CalciteBinCommandIT.testBinBasicFunctionality
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalciteBinCommandIT.testBinValueFieldOnly
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalciteBinCommandIT.testBinWithMonthlySpan
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalciteEvalCommandIT.testEvalStringConcatenationWithExistingData
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalciteFieldsCommandIT.testFieldsAndTableEquivalence
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalciteFieldsCommandIT.testSpaceDelimitedEquivalentToCommaDelimited
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalciteHeadCommandIT.testHead
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalciteHeadCommandIT.testHeadWithNumber
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalciteHeadCommandIT.testHeadWithNumberAndFrom
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalciteHeadCommandIT.testHeadWithNumberLargerThanMaxResultWindow
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalciteMVAppendFunctionIT.testMvappendInWhereClause
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalciteMVAppendFunctionIT.testMvappendWithRealFields
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalciteMultiValueStatsIT.testListFunctionEmptyResult
+      org.opensearch.client.ResponseException: method [POST], host [http://localhost:9
+  org.opensearch.sql.calcite.remote.CalciteMultiValueStatsIT.testListFunctionGroupBy
+      org.opensearch.client.ResponseException: method [POST], host [http://localhost:9
+  org.opensearch.sql.calcite.remote.CalciteMultiValueStatsIT.testListFunctionMultipleFields
+      org.opensearch.client.ResponseException: method [POST], host [http://localhost:9
+  org.opensearch.sql.calcite.remote.CalciteMultiValueStatsIT.testListFunctionWithArithmeticExpression
+      org.opensearch.client.ResponseException: method [POST], host [http://localhost:9
+  org.opensearch.sql.calcite.remote.CalciteMultiValueStatsIT.testListFunctionWithByte
+      org.opensearch.client.ResponseException: method [POST], host [http://localhost:9
+  org.opensearch.sql.calcite.remote.CalciteMultiValueStatsIT.testListFunctionWithComplexGroupBy
+      org.opensearch.client.ResponseException: method [POST], host [http://localhost:9
+  org.opensearch.sql.calcite.remote.CalciteMultiValueStatsIT.testListFunctionWithDate
+      org.opensearch.client.ResponseException: method [POST], host [http://localhost:9
+  org.opensearch.sql.calcite.remote.CalciteMultiValueStatsIT.testListFunctionWithDouble
+      org.opensearch.client.ResponseException: method [POST], host [http://localhost:9
+  org.opensearch.sql.calcite.remote.CalciteMultiValueStatsIT.testListFunctionWithFloat
+      org.opensearch.client.ResponseException: method [POST], host [http://localhost:9
+  org.opensearch.sql.calcite.remote.CalciteMultiValueStatsIT.testListFunctionWithIP
+      org.opensearch.client.ResponseException: method [POST], host [http://localhost:9
+  org.opensearch.sql.calcite.remote.CalciteMultiValueStatsIT.testListFunctionWithInteger
+      org.opensearch.client.ResponseException: method [POST], host [http://localhost:9
+  org.opensearch.sql.calcite.remote.CalciteMultiValueStatsIT.testListFunctionWithLong
+      org.opensearch.client.ResponseException: method [POST], host [http://localhost:9
+  org.opensearch.sql.calcite.remote.CalciteMultiValueStatsIT.testListFunctionWithShort
+      org.opensearch.client.ResponseException: method [POST], host [http://localhost:9
+  org.opensearch.sql.calcite.remote.CalciteMultiValueStatsIT.testListFunctionWithTime
+      org.opensearch.client.ResponseException: method [POST], host [http://localhost:9
+  org.opensearch.sql.calcite.remote.CalciteMultiValueStatsIT.testListFunctionWithTimestamp
+      org.opensearch.client.ResponseException: method [POST], host [http://localhost:9
+  org.opensearch.sql.calcite.remote.CalciteMultiValueStatsIT.testValuesFunctionEmptyResult
+      org.opensearch.client.ResponseException: method [POST], host [http://localhost:9
+  org.opensearch.sql.calcite.remote.CalciteMultiValueStatsIT.testValuesFunctionWithInteger
+      org.opensearch.client.ResponseException: method [POST], host [http://localhost:9
+  org.opensearch.sql.calcite.remote.CalciteMultiValueStatsIT.testValuesFunctionWithUnlimitedValues
+      org.opensearch.client.ResponseException: method [POST], host [http://localhost:9
+  org.opensearch.sql.calcite.remote.CalciteMultisearchCommandIT.testMultisearchCrossIndexFieldSelection
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalciteMultisearchCommandIT.testMultisearchWithFieldsProjection
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalciteMultisearchCommandIT.testMultisearchWithTimeIndicesTimestampOrdering
+      org.opensearch.client.ResponseException: method [POST], host [http://localhost:9
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationIT.testCountByCustomTimeSpanWithDifferentUnits
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationIT.testCountByNullableTimeSpan
+      java.lang.AssertionError: expected:<4> but was:<3>
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationIT.testFirstAggregation
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationIT.testFirstLastBirthdateByGender
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationIT.testFirstLastBirthdateWithOtherFields
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationIT.testFirstLastByGroup
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationIT.testFirstLastByGroupOnTextField
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationIT.testFirstLastDifferentFields
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationIT.testFirstLastMixedFields
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationIT.testFirstLastTimestampByCategory
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationIT.testFirstLastTimestampWithValue
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationIT.testFirstLastWithBirthdate
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationIT.testFirstLastWithIntegerNestedField
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationIT.testFirstLastWithOtherAggregations
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationIT.testFirstLastWithOtherAggregationsOnTextField
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationIT.testFirstLastWithTimestamp
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationIT.testLastWithDeepNestedField
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationIT.testStatsCountOnFunctionsWithUDTArg
+      org.opensearch.client.ResponseException: method [POST], host [http://localhost:9
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationIT.testTake
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationPaginatingIT.testCountByCustomTimeSpanWithDifferentUnits
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationPaginatingIT.testCountByNullableTimeSpan
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationPaginatingIT.testFirstAggregationOnTextField
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationPaginatingIT.testFirstLastBirthdateByGender
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationPaginatingIT.testFirstLastBirthdateWithOtherFields
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationPaginatingIT.testFirstLastByGroup
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationPaginatingIT.testFirstLastByGroupOnTextField
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationPaginatingIT.testFirstLastTimestampByCategory
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationPaginatingIT.testFirstLastWithBirthdate
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationPaginatingIT.testFirstLastWithBooleanNestedField
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationPaginatingIT.testFirstLastWithDeepNestedField
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationPaginatingIT.testFirstLastWithIntegerNestedField
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationPaginatingIT.testFirstLastWithOtherAggregations
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationPaginatingIT.testFirstLastWithOtherAggregationsOnTextField
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationPaginatingIT.testFirstLastWithSimpleField
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationPaginatingIT.testFirstLastWithTimestamp
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationPaginatingIT.testLastAggregation
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationPaginatingIT.testLastWithDeepNestedField
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationPaginatingIT.testScriptWithLastFirstTakeAggregation
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationPaginatingIT.testStatsCountOnFunctionsWithUDTArg
+      org.opensearch.client.ResponseException: method [POST], host [http://localhost:9
+  org.opensearch.sql.calcite.remote.CalcitePPLAggregationPaginatingIT.testTextTypeWithLastFirstTakeAggregation
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLDashboardPatternsIT.testDashboardBrainLabelStatsByPatternsField
+      org.opensearch.client.ResponseException: method [POST], host [http://localhost:9
+  org.opensearch.sql.calcite.remote.CalcitePPLDedupIT.testDedupKeepEmpty2
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLEnhancedCoalesceIT.testCoalesceEmptyFieldWithFallback
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLEnhancedCoalesceIT.testCoalesceNested
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLEnhancedCoalesceIT.testCoalesceWithMixedTypes
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLGrokIT.testGrokAddressOverriding
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLGrokIT.testGrokEmail
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLPatternsIT.testBrainLabelMode_NotShowNumberedToken
+      org.opensearch.client.ResponseException: method [POST], host [http://localhost:9
+  org.opensearch.sql.calcite.remote.CalcitePPLPatternsIT.testBrainParseWithUUID_NotShowNumberedToken
+      org.opensearch.client.ResponseException: method [POST], host [http://localhost:9
+  org.opensearch.sql.calcite.remote.CalcitePPLPatternsIT.testSimplePatternAggregationMode_NotShowNumberedToken
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLPatternsIT.testSimplePatternAggregationMode_ShowNumberedToken
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLPatternsIT.testSimplePatternLabelModeWithCustomPattern_ShowNumberedToken
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalcitePPLPatternsIT.testSimplePatternLabelMode_NotShowNumberedToken
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalciteReverseCommandIT.testReverseIgnoredWithoutSortOrTimestamp
+      java.lang.AssertionError:
+  org.opensearch.sql.calcite.remote.CalciteRexCommandIT.testRexBasicFieldExtraction
+      org.junit.ComparisonFailure: expected:<[amberduke@pyrami].com> but was:<[nanette
+  org.opensearch.sql.calcite.remote.CalciteRexCommandIT.testRexNestedCaptureGroupsBugFix
+      java.lang.AssertionError: expected:<amberduke> but was:<null>
+  org.opensearch.sql.ppl.FieldsCommandIT.testMultipleFieldSelection
+      java.lang.AssertionError:
+  org.opensearch.sql.ppl.TrailingPipeIT.testEmptyPipeInMiddle
+      java.lang.AssertionError
+  org.opensearch.sql.ppl.TrailingPipeIT.testTrailingPipeAfterSource
+      java.lang.AssertionError
+
+================================================================
+ROOT-CAUSE ANALYSIS (in progress)
+================================================================
+
+The 93 failures cluster into these root causes:
+
+--- 500 ERRORS (server-side / engine bugs) — 24 tests ---
+
+[RC-A] DataFusion panic: "execute_local_plan: CPU spawn failed: Panic" — 16 tests
+  All CalciteMultiValueStatsIT list()/values() tests:
+  testListFunctionEmptyResult, testListFunctionMultipleFields, testListFunctionWithArithmeticExpression,
+  testListFunctionWithByte, testListFunctionWithDate, testListFunctionWithDouble, testListFunctionWithFloat,
+  testListFunctionWithIP, testListFunctionWithLong, testListFunctionWithShort, testListFunctionWithInteger,
+  testListFunctionWithTime, testListFunctionWithTimestamp, testValuesFunctionEmptyResult,
+  testValuesFunctionWithInteger, testValuesFunctionWithUnlimitedValues
+  STATUS: investigating
+
+[RC-C] "Unsupported TRY_CAST from List(Struct(...))" — 3 tests
+  CalcitePPLDashboardPatternsIT.testDashboardBrainLabelStatsByPatternsField
+  CalcitePPLPatternsIT.testBrainLabelMode_NotShowNumberedToken
+  CalcitePPLPatternsIT.testBrainParseWithUUID_NotShowNumberedToken
+  STATUS: pending
+
+[RC-D] Substrait/struct/decode errors — 5 tests
+  - "Substrait schema field 't' has a different type (Float...)":
+      CalcitePPLAggregationIT.testStatsCountOnFunctionsWithUDTArg
+      CalcitePPLAggregationPaginatingIT.testStatsCountOnFunctionsWithUDTArg
+  - "Field reference offset (N) must be less than number of fields in struct (N)":
+      CalciteMultiValueStatsIT.testListFunctionGroupBy (offset 2 of 2)
+      CalciteMultiValueStatsIT.testListFunctionWithComplexGroupBy (offset 3 of 3)
+  - "derive_schema_from_partial_plan: decode failed: Protobuf":
+      CalciteMultisearchCommandIT.testMultisearchWithTimeIndicesTimestampOrdering
+  STATUS: pending
+
+--- ASSERTION / WRONG-ROWS — 69 tests ---
+
+[RC-B] Test ran, returned wrong/differently-ordered rows on 2 shards. Mostly first/last/take
+  aggregations, patterns, rex, coalesce, head, fields, addtotals. Need to separate genuine
+  multi-shard correctness bugs from ordering non-determinism in single-shard-authored assertions.
+  STATUS: pending
+
+----------------------------------------------------------------
+[RC-A] ROOT CAUSE (confirmed) — MultiValueStats list()/values() panic
+----------------------------------------------------------------
+Reproduced: `source=<2-shard parquet idx> | stats list(integer_number) as int_list`
+  → 500 "execute_local_plan: CPU spawn failed: Panic { index out of bounds: the len is 1 but the index is 1 }"
+
+Exact panic location (from cluster stderr, RUST_BACKTRACE off):
+  datafusion-common-53.1.0/src/dfschema.rs:371:31
+  pub fn qualified_field(&self, i: usize) -> ... { (self.field_qualifiers[i]..., self.field(i)) }
+  → field_qualifiers[1] on a schema with len 1.
+
+Java call path (from stack trace):
+  ReduceStageExecutionFactory.createExecution → DatafusionReduceSink.<init>
+  → NativeBridge.executeLocalPlan  (the COORDINATOR REDUCE / FINAL merge stage)
+
+Mechanism:
+  - Only triggers with >=2 shards (single shard has no reduce/merge stage) and only for
+    SCALAR (no group-by) list()/values(). Grouped list() fails differently (see RC-D:
+    "Field reference offset (2) must be less than number of fields in struct (2)").
+  - FINAL list/values is rewritten to LOCAL_LIST_MERGE_OP (PplAggregateCallRewriter:288-311).
+    The Java rewriter args are bounds-correct.
+  - The FINAL reduce fragment handed to executeLocalPlan references field index 1 (a
+    group/qualifier column) when the reduce input schema has only 1 column (the single
+    list state column, no group key). DataFusion's qualified_field(1) then panics.
+  - i.e. the substrait/relabel for the no-group-by FINAL list-merge reduce emits a
+    field reference (offset 1) that assumes a leading group column that isn't present.
+
+Affected (16): all CalciteMultiValueStatsIT list*/values* WITHOUT group-by.
+NOT a UDAF bug — list_merge.rs accumulator is bounds-safe (loops 0..len). The bad field
+reference is built upstream when constructing the reduce/FINAL plan for the no-group case.
+
+STATUS: root cause located (DataFusion qualified_field(1) on 1-col reduce schema).
+Fix candidate: in the FINAL list-merge reduce-plan / substrait emit, do not emit a
+group-column field reference (offset 1) when groupCount==0.
+
+----------------------------------------------------------------
+[RC-A] FULL BACKTRACE (RUST_BACKTRACE=full, correct repo, 2-shard)
+----------------------------------------------------------------
+Panic: datafusion-common-54.0.0/src/dfschema.rs:378  DFSchema::qualified_field(1) on len-1 schema
+Frame chain (top→down):
+  panic_bounds_check
+  DFSchema::qualified_field
+  datafusion_substrait::...::from_substrait_field_reference
+  ...::from_substrait_agg_func            <- consuming an AGGREGATE rel's function args
+  ...::from_aggregate_rel
+  ...::from_substrait_plan
+  opensearch_datafusion::local_executor::LocalSession::execute_substrait
+  opensearch_datafusion::api::execute_local_plan         (the coordinator REDUCE stage)
+
+Plan shape (from DEBUG): aggregate stays  OpenSearchAggregate(group={}, LIST($0), mode=SINGLE)
+  over an OpenSearchExchangeReducer(SINGLETON) — the PARTIAL/FINAL split is intentionally
+  SKIPPED for LIST/VALUES because they are STATE_EXPANDING
+  (OpenSearchAggregateSplitRule.shouldSkipPartialFinalSplit:69). So the planner GATHERS both
+  shards to the coordinator and runs SINGLE LIST($0) there in the REDUCE stage.
+
+ROOT CAUSE: the REDUCE-stage substrait for the gathered SINGLE STATE_EXPANDING aggregate
+contains an aggregate-measure field reference at offset 1, but the reduce input (gathered
+exchange) schema has only 1 field (offset 0). DataFusion's substrait consumer resolves that
+ref via DFSchema::qualified_field(1) and panics.
+  - Only with >=2 shards: 1 shard => no reduce/gather stage => no panic.
+  - Only scalar (group={}): grouped LIST takes a different failure (RC-D struct offset).
+  - Stitching happens in DataFusionFragmentConvertor.attachFragmentOnTop / attachPartialAggOnTop
+    -> rewire(...), which re-roots the aggregate's field refs against the inner gathered schema.
+    The offset-1 ref survives/!is-rebased for the no-group SINGLE STATE_EXPANDING case.
+
+REPRO (verified): 2-shard parquet datatypes_numeric, `stats list(integer_number) as int_list`.
+STATUS: root cause fully located; fix target = reduce-fragment field-ref rebase for
+  no-group SINGLE STATE_EXPANDING aggregate (attachFragmentOnTop/rewire path).
+
+----------------------------------------------------------------
+[RC-A] DESIGN DECISION (per maintainer): keep SINGLE (gather) for LIST/VALUES
+----------------------------------------------------------------
+LIST/VALUES are STATE_EXPANDING; OpenSearchAggregateSplitRule deliberately SKIPS the
+PARTIAL/FINAL split (line 69) and gathers to coordinator → SINGLE LIST($0) in REDUCE stage.
+Decision: that gather-to-SINGLE placement is CORRECT and stays. The bug to fix is the
+panic in the REDUCE-stage substrait for that SINGLE aggregate (a measure field-ref at
+offset 1 vs a len-1 reduce input schema). i.e. fix the reduce-fragment substrait emission,
+do NOT enable the split.
+
+----------------------------------------------------------------
+[RC-A] REDUCE FRAGMENT SHAPE (from DEBUG, localhost 2-shard)
+----------------------------------------------------------------
+Shard stage (0): OpenSearchTableScan (full 8-col scan)  -> 388-byte substrait, ships all cols
+Coordinator reduce stage (1):
+    OpenSearchAggregate(group={}, LIST($0), SINGLE)
+      OpenSearchProject(integer_number=[$4])
+        OpenSearchStageInputScan(childStageId=0)   <- 8-col schema
+  -> 268-byte substrait = Aggregate(Project(StageInputScan))
+Panic consuming this 268-byte plan's AGGREGATE rel args: qualified_field(1) on len-1 schema.
+The aggregate sits over a 1-col Project output; a measure/grouping field ref at offset 1
+is emitted where only offset 0 exists. Localized to no-group SINGLE list/values reduce.
+
+REGRESSION TEST ADDED (failing, reproduces deterministically):
+  sandbox/qa/analytics-engine-rest/.../ListAggregateMultiShardIT.java
+  (2-shard list()/values() per element type; all panic with the index-out-of-bounds today)
+
+FIX TARGET: reduce-stage substrait emission for no-group SINGLE state-expanding aggregate
+  over a Project/StageInputScan — the aggregate's grouping/measure field ref must not exceed
+  the 1-col reduce input. Likely in convertReduceNode/convertFragment isthmus emission of
+  Aggregate(Project(...)) for the empty-group case.
+
+================================================================
+REGRESSION ITs WRITTEN IN sandbox/qa (all compile; all reproduce)
+================================================================
+1. ListAggregateMultiShardIT  (RC-A)
+   2-shard scalar list()/values() per element type.
+   Reproduces: "execute_local_plan: CPU spawn failed: Panic { index out of bounds:
+   the len is 1 but the index is 1 }"  (DFSchema::qualified_field(1) on len-1 reduce input)
+
+2. MultiShardReduceRegressionIT  (RC-D)
+   - testListByGroupTwoShards / testListByStringGroupTwoShards
+       Reproduces: "Field reference offset (2) must be less than number of fields in struct (2)"
+   - testCountByUdtExprGroupTwoShards
+       Reproduces: "Substrait error: Field 't' has a different type (Float64) than the
+       table schema (Int64)"  (UDT-typed group key, unix_timestamp)
+
+NOT YET WRITTEN:
+   RC-C  patterns BRAIN mode "Unsupported TRY_CAST from List(Struct(...))" — needs HDFS-logs
+         dataset + patterns command; sandbox already has patterns datasets, deferred.
+   RC-B  63 first/last/take 2-shard assertion failures — need per-case triage (ordering
+         non-determinism vs real bug) before writing assertions.
+
+3. PatternsCommandIT (RC-C) — added to existing patterns IT (3-shard app_logs_patterns_multi)
+   - testBrainLabelModeMultiShard  / testBrainAggregationModeMultiShard
+     Reproduces: "This feature is not implemented: Unsupported TRY_CAST from
+       List(Struct(\"pattern\": Utf8, \"pattern_count\": Int64,
+       \"tokens\": Map(...), \"sample_logs\": List(Utf8))) to Utf8"
+     i.e. BRAIN label/aggregation state (list-of-struct) can't TRY_CAST to Utf8 at the
+     cross-shard reduce. Full struct shape now captured by the test.
+
+ALL THREE engine-error root causes (RC-A, RC-C, RC-D) now have deterministic 2-shard
+regression ITs in sandbox/qa. RC-B (first/last/take ordering) still needs triage.
+
+----------------------------------------------------------------
+[RC-A] EXACT BUG CONFIRMED via stitched substrait dump
+----------------------------------------------------------------
+Reduce fragment = attachFragmentOnTop(Aggregate, innerProjectBytes). Decoded proto shows:
+  aggregate {
+    input { project { emit { output_mapping: 8 }   // 8-col read + 1 expr(field 4); outputs 1 col
+                      input { read { base_schema: 8 cols; named_table "input-0" } }
+                      expressions { selection { struct_field { field: 4 } } } } }
+    groupings { }                                   // empty (correct, no group-by)
+    measures { measure { function: array_agg
+                         arguments { value { selection { struct_field { field: 1 } } } } } }  // <-- BUG
+  }
+The measure arg references field 1, but the aggregate's input (the Project) outputs only 1 field
+(offset 0). DataFusion qualified_field(1) on the len-1 schema -> panic.
+
+Unit repro status: a plain convertFragment / attachFragmentOnTop of SUM($0) over a 1-col input
+emits field 0 CORRECTLY (unit test passes). The off-by-one only manifests with the real
+array_agg(LIST) measure over a Project carrying emit{output_mapping:8}. Faithful unit repro needs
+that exact Project-emit shape; the IT (ListAggregateMultiShardIT) is the reliable reproducer.
+
+NEXT: fix candidate is the measure-arg field reference when stitching an aggregate over a Project
+whose substrait uses emit.output_mapping (the agg measure must rebase onto the project's EMITTED
+output, not its internal pre-emit field space). Likely in rewire()/convertStandalone or a
+SubstraitPlanPojoRewriter patch.
+
+----------------------------------------------------------------
+[RC-A] UNIT REPRODUCTION ATTEMPT — could NOT reproduce at unit level
+----------------------------------------------------------------
+Built 5 faithful reconstructions in DataFusionFragmentConvertorTests
+(SUM and array_agg; 1-level and 2-level Aggregate(Project); matching project
+emit{output_mapping}). ALL emit the correct measure arg field:0 and PASS.
+The real query emits field:1. So the off-by-one is NOT intrinsic to this
+substrait shape — it comes from a real-planner RelNode detail not captured by a
+hand-built tree. Unit test removed (was a misleading green guard).
+
+DECISION: ListAggregateMultiShardIT is the reliable reproducer; fix RC-A
+empirically against it.
+
+Real reduce path (FragmentConversionDriver.convertReduceNode line 537-545):
+  innerBytes = convertReduceNode(Project)        // converts Project as own fragment
+  attachFragmentOnTop(strippedAggregate, innerBytes)  // strippedNode keeps real Project child
+The generic attachFragmentOnTop path panics; the attachPartialAggOnTop path (used when a
+PARTIAL agg exists) does NOT — suggesting the fix may be to route the no-group
+STATE_EXPANDING SINGLE-over-Project reduce through a path that folds the Project into the
+aggregate input (like the partial path) rather than emitting Aggregate(Project) with a
+mismatched measure offset.
+
+EMPIRICAL FIX LOOP (requires rebuild + cluster restart per iteration):
+  1. candidate change in convertReduceNode / attachFragmentOnTop measure-offset handling
+  2. ./gradlew run (RUST_BACKTRACE + debug logs already wired)
+  3. run ListAggregateMultiShardIT (or curl the 2-shard list query)
+  4. confirm green, no regressions
+
+----------------------------------------------------------------
+[RC-A] ROOT CAUSE PINNED (input + output dumps captured)
+----------------------------------------------------------------
+attachFragmentOnTop receives:  LogicalAggregate(group={}, LIST($0))
+                                 <- LogicalProject(integer_number=$4)
+                                 <- StageInputTableScan(input-0, 8 cols)
+
+Inside convertStandalone(aggregate), PplAggregateCallRewriter.liftListValuesOperandsToVarchar
+fires for LIST(scalar int): it inserts a "lifting Project" that PASSES THROUGH the input
+columns then APPENDS a VARCHAR cast column, and rewires LIST to point at that appended column
+(index = inputCols + castSlot). So the measure becomes array_agg(field = <lifted cast idx>).
+
+Then rewire() REPLACES the aggregate's input with the externally-converted inner Project bytes
+(the original 1-column integer_number projection) — DISCARDING the lifting Project. The measure's
+rewired field reference (here field:1) now dangles over a 1-column input -> DataFusion
+qualified_field(1) on len-1 schema -> PANIC.
+
+Confirmed via stitched proto: read=8 cols, project output_mapping:8 -> 1 col (field 4),
+aggregate measure arg = field:1 (the lifted cast slot), but project output has only field 0.
+
+FIX DIRECTION: in attachFragmentOnTop / convertStandalone for an aggregate that lifts
+List/Values operands, the lifting Project must be preserved in the stitched plan (rewire must
+keep it between the aggregate and the replaced inner), OR the lift must be applied to the inner
+Project bytes too. The measure field reference and the actual emitted input schema must agree.
+Likely fix in DataFusionFragmentConvertor.rewire/attachFragmentOnTop or by having the lift run
+on convertFragment(project) inner as well.
+
+----------------------------------------------------------------
+[RC-A] FIX ATTEMPT #1 — REVERTED (regressed: index 1 -> index 7/10)
+----------------------------------------------------------------
+Tried: in replaceInput(Aggregate), if agg.input is a Project, recurse to preserve it.
+Result: WORSE — panic became "index is 7"/"index is 10" (the full passthrough width),
+because the preserved lift Project's passthrough refs (field 0..N) exceed the 1-col inner.
+Reverted.
+
+Refined understanding:
+  - PplAggregateCallRewriter's lift Project = passthrough(all input cols) + appended VARCHAR cast;
+    measure rewired to the appended cast index.
+  - In the reduce path the inner delivered to the aggregate is ALREADY the narrowed 1-col
+    reduce Project (integer_number). The lift assumes it sits over the ORIGINAL wide input.
+  - Dropping the lift (current behavior) -> measure field:1 over 1-col inner -> panic (index 1).
+  - Naively preserving the lift -> passthrough field:0..N over 1-col inner -> panic (index 7/10).
+
+Correct fix must reconcile the lift's expected input width with the actual reduce input. Options:
+  (a) Run the operand-lift on the INNER fragment (so the gathered reduce input already carries the
+      VARCHAR cast column) rather than inside the coordinator aggregate wrapper.
+  (b) Make the lift Project sit directly over newInput producing [arg@0, cast@1] (rebase passthrough
+      to the single delivered column), so measure->1 is valid over a 2-col emit.
+  (c) Avoid lifting at all for the reduce SINGLE path; cast at a different layer.
+Needs care — attempt #1 proved naive preservation regresses. Validate any candidate against
+ListAggregateMultiShardIT AND a single-shard list IT (ListAggregateMultiTypeIT) for no regression.
+
+----------------------------------------------------------------
+[RC-A] FIX ATTEMPT #2 — also REVERTED (same index 7/10 regression)
+----------------------------------------------------------------
+Confirmed via the BEFORE/AFTER lift RelNode dump (localhost):
+  BEFORE: Aggregate(LIST($0)) <- Project(integer_number=$4) <- StageInputTableScan(input-0, 8col)
+  AFTER : Aggregate(LIST($1))
+            <- LiftProject(integer_number=$0, integer_number$str=CAST($0):VARCHAR)   # 2 cols
+              <- Project(integer_number=$4)                                          # 1 col
+                <- StageInputTableScan(input-0, 8col)
+So the lift correctly builds a 2-col LiftProject and points LIST at the cast col ($1).
+The wrapper convertStandalone produces Aggregate(LiftProject(reduceProject(scan))).
+
+Both fix attempts (drop vs preserve the LiftProject in rewire/replaceInput) panic:
+  - drop      -> measure field 1 over 1-col inner  -> "index is 1"
+  - preserve  -> "index is 7"/"index is 10"  (varies by element type)
+The "preserve" regression to 7/10 indicates substrait emit.output_mapping is NOT honored as a
+field-offset remap by the PARENT rel in DataFusion's substrait consumer: stacking LiftProject
+on the reduceProject's output_mapping:8 emit makes parent field refs resolve against the 8-col
+PRE-EMIT space, not the 1-col emitted output. So the LiftProject + reduceProject + output_mapping
+interaction is the true tangle.
+
+CONCLUSION: not a one-line rewire fix. Proven dead-ends recorded. The robust fix is likely
+option (a): run the List/Values operand-lift on the data-node/inner fragment (before gather), so
+the gathered reduce input already carries the VARCHAR cast column and the coordinator aggregate
+references a real, present column — avoiding the cross-fragment output_mapping mismatch entirely.
+This is a larger planner change (FragmentConversionDriver + PplAggregateCallRewriter placement)
+and should be its own focused change with the IT (ListAggregateMultiShardIT) as the gate.
+
+Diagnostic logs left in place (gated on DEBUG, no prod impact):
+  - DataFusionFragmentConvertor: "Substrait plan proto", "Stitched attachFragmentOnTop proto",
+    "attachFragmentOnTop input RelNode"
+  - PplAggregateCallRewriter: "RC-A lift: ... BEFORE/AFTER"
+
+----------------------------------------------------------------
+[RC-A] FIX ATTEMPT #3 — PANIC ELIMINATED (now returns null, was crash)
+----------------------------------------------------------------
+Fix: FragmentConversionDriver.convertReduceNode — when the reduce node is an OpenSearchAggregate
+whose single-input chain reaches an ExchangeReducer WITHOUT a PARTIAL agg below it (the non-split
+STATE_EXPANDING gather), convert the whole Aggregate(...Project...->StageInputScan) subtree in ONE
+convertFragment pass instead of the per-operator attachFragmentOnTop stitch. New helper:
+singleInputChainReachesExchangeReducerWithoutPartialAgg().
+
+RESULT (verified via fresh IT build, ListAggregateMultiShardIT.testListIntegerTwoShards):
+  - BEFORE: "execute_local_plan: CPU spawn failed: Panic { index out of bounds }"  (CRASH)
+  - AFTER : "list() must return a List, got null"  (runs, but 2-shard merge yields null)
+So the single-fragment conversion removes the dangling field-ref crash. Remaining: the gathered
+aggregate returns null instead of the concatenated list ['2','20'].
+
+Affects BOTH list() and values() (and likely all array-producing STATE_EXPANDING aggs); single-arg
+scalar aggs (sum/count) unaffected (they PARTIAL/FINAL split normally). 1-shard list() works fine
+(['2','20']); only 2-shard returns null.
+
+NEXT: debug why the gathered single-fragment Aggregate(Project(NamedScan input-0)) returns null —
+likely the child stage (raw scan) isn't shipping rows to input-0, or the gather wiring differs from
+the proven FINAL path. Needs running cluster on CURRENT build + DEBUG (localhost currently has a
+prior fix version).
+
+----------------------------------------------------------------
+[RC-A] FIX WORKS — validated on live 2-shard cluster
+----------------------------------------------------------------
+The earlier "null" was a TRANSIENT empty-index artifact (bulk hadn't loaded), NOT the fix.
+With data present, the one-pass convertReduceNode fix produces correct results:
+  list(integer_number)   -> ['20','200','2']   (merged across 2 shards, no panic) ✓
+  values(integer_number) -> ['2','20','200']   (merged, distinct, sorted) ✓
+  count()                -> 3                   (scalar control, unaffected) ✓
+
+ISOLATION CONFIRMED: the bug is ONLY LIST/VALUES(scalar) on the multi-shard reduce path.
+  - liftListValuesOperandsToVarchar (the lift Project) fires ONLY for isListOrValuesCall.
+  - 0 TAKE/FIRST/LAST/PATTERN tests hit the index-out-of-bounds panic across the whole sweep.
+  - Fix scoped by singleInputChainReachesExchangeReducerWithoutPartialAgg() — touches only the
+    gathered SINGLE-aggregate-no-PARTIAL reduce path; FINAL/scalar/multi-input paths unchanged.
+
+NOTE: `list(...) by <group>` still fails but with RC-D's DIFFERENT error
+  (type mismatch: VARCHAR NOT NULL ARRAY vs VARCHAR ARRAY) — separate bug, not RC-A.

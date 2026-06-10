@@ -2,7 +2,7 @@
   "mappings": {
     "properties": {
       "address": {
-        "type": "nested",
+        "type": "object",
         "properties": {
           "city": {
             "type": "text",

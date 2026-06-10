@@ -32,6 +32,7 @@ import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
@@ -66,10 +67,32 @@ public abstract class SQLIntegTestCase extends OpenSearchSQLRestTestCase {
       initClient();
     }
 
+    // When -Dtests.analytics.parquet_indices=true, make every index (including ones a test
+    // auto-creates via a raw document PUT, which bypasses createIndexByRestClient) parquet-backed
+    // composite, so it is stored as a DataFormatAwareEngine and is actually scannable by the
+    // analytics engine it routes to. Must run before init() creates any index.
+    TestUtils.AnalyticsIndexConfig.applyClusterSettings(client());
+
     if (shouldResetQuerySizeLimit()) {
       resetQuerySizeLimit();
     }
     init();
+  }
+
+  /**
+   * Wipe all indices after every test method so each method's {@link #init()} reloads from a clean
+   * slate. The composite/parquet engine does not honor {@code _id} on write (its versionMap is never
+   * populated), so a {@code PUT /_doc/N} to an existing id APPENDS a duplicate row instead of
+   * overwriting. Classes that issue unconditional {@code PUT /_doc/N} in {@code init()} (e.g. weblogs
+   * docs 7-10, worker doc 7) — or that share an index polluted by such a class — accumulate
+   * duplicates across methods under {@link #preserveClusterUponCompletion()}, inflating row counts.
+   * Wiping per method removes the cross-method accumulation regardless of the engine bug.
+   */
+  @After
+  public void wipeIndicesAfterEachMethod() throws IOException {
+    if (System.getProperty("tests.rest.bwcsuite") == null) {
+      wipeAllOpenSearchIndices();
+    }
   }
 
   @Override

@@ -2,7 +2,7 @@
   "mappings": {
     "properties": {
       "message": {
-        "type": "nested",
+        "type": "object",
         "properties": {
           "info": {
             "type": "keyword",
@@ -24,7 +24,7 @@
         }
       },
       "comment": {
-        "type": "nested",
+        "type": "object",
         "properties": {
           "data": {
             "type": "keyword",
