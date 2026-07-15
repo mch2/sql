@@ -44,8 +44,11 @@ import org.opensearch.sql.executor.ExecutionEngine.QueryResponse;
 import org.opensearch.sql.executor.QueryType;
 import org.opensearch.sql.executor.analytics.AnalyticsExecutionEngine;
 import org.opensearch.sql.lang.LangSpec;
+import org.opensearch.sql.monitor.ResourceMonitor;
 import org.opensearch.sql.monitor.profile.ProfileContext;
 import org.opensearch.sql.monitor.profile.QueryProfiling;
+import org.opensearch.sql.opensearch.monitor.OpenSearchMemoryHealthy;
+import org.opensearch.sql.opensearch.monitor.OpenSearchResourceMonitor;
 import org.opensearch.sql.plugin.transport.TransportPPLQueryResponse;
 import org.opensearch.sql.protocol.response.QueryResult;
 import org.opensearch.sql.protocol.response.format.ResponseFormatter;
@@ -69,6 +72,13 @@ public class RestUnifiedQueryAction {
   private final ClusterService clusterService;
   private final org.opensearch.analytics.EngineContextProvider contextProvider;
   private final org.opensearch.sql.common.setting.Settings pluginSettings;
+  // Heap guard for the analytics-engine result path. The analytics engine bypasses the v2
+  // PhysicalPlan operator tree, so the {@code ResourceMonitorPlan} that polls this monitor on the
+  // v2 next()-loop never runs here — the full result is materialized (Object[] rows) and then
+  // Gson-serialized into one String with no heap check, which OOMs the node on wide/large results.
+  // Reuse the same monitor v2 uses (heap usage vs. plugins.query.memory_limit) and check it before
+  // serializing the response.
+  private final ResourceMonitor resourceMonitor;
 
   public RestUnifiedQueryAction(
       NodeClient client,
@@ -81,6 +91,8 @@ public class RestUnifiedQueryAction {
     this.analyticsEngine = new AnalyticsExecutionEngine(planExecutor);
     this.contextProvider = contextProvider;
     this.pluginSettings = pluginSettings;
+    this.resourceMonitor =
+        new OpenSearchResourceMonitor(pluginSettings, new OpenSearchMemoryHealthy(pluginSettings));
   }
 
   /**
@@ -418,6 +430,17 @@ public class RestUnifiedQueryAction {
           profileCtx.setEnginePlan(toJsonElement(response.getProfile()));
         }
 
+        // Heap guard: fully materializing + Gson-serializing the result into one String can OOM the
+        // node for wide/large analytics results (the analytics path has no ResourceMonitorPlan). Bail
+        // out with a 429-style rejection if heap is already over plugins.query.memory_limit, instead
+        // of crashing while building the response.
+        if (!resourceMonitor.isHealthy()) {
+          transportListener.onFailure(
+              new IllegalStateException(
+                  "Insufficient memory to serialize the query result. To increase the limit, adjust"
+                      + " the 'plugins.query.memory_limit' setting."));
+          return;
+        }
         String result =
             QueryProfiling.withCurrentContext(
                 profileCtx,
