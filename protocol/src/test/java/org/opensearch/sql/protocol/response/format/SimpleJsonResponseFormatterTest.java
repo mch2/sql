@@ -6,6 +6,8 @@
 package org.opensearch.sql.protocol.response.format;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opensearch.sql.data.model.ExprValueUtils.LITERAL_MISSING;
 import static org.opensearch.sql.data.model.ExprValueUtils.collectionValue;
 import static org.opensearch.sql.data.model.ExprValueUtils.stringValue;
@@ -26,6 +28,7 @@ import org.opensearch.sql.data.model.ExprTupleValue;
 import org.opensearch.sql.data.model.ExprValue;
 import org.opensearch.sql.data.model.ExprValueUtils;
 import org.opensearch.sql.executor.ExecutionEngine;
+import org.opensearch.sql.monitor.AlwaysHealthyMonitor;
 import org.opensearch.sql.protocol.response.QueryResult;
 
 class SimpleJsonResponseFormatterTest {
@@ -227,5 +230,180 @@ class SimpleJsonResponseFormatterTest {
             + "  \"reason\": \"This is an exception\"\n"
             + "}",
         formatter.format(new RuntimeException("This is an exception")));
+  }
+
+  // ─── streaming writer + heap guards ────────────────────────────────────────────
+
+  /** Passing an explicit (healthy) monitor produces the exact same output as the default ctor. */
+  @Test
+  void formatResponseWithExplicitHealthyMonitor() {
+    QueryResult response =
+        new QueryResult(
+            schema,
+            Arrays.asList(
+                tupleValue(ImmutableMap.of("firstname", "John", "age", 20)),
+                tupleValue(ImmutableMap.of("firstname", "Smith", "age", 30))));
+    SimpleJsonResponseFormatter formatter =
+        new SimpleJsonResponseFormatter(COMPACT, new AlwaysHealthyMonitor());
+    assertEquals(
+        "{\"schema\":[{\"name\":\"firstname\",\"type\":\"string\"},"
+            + "{\"name\":\"age\",\"type\":\"integer\"}],\"datarows\":"
+            + "[[\"John\",20],[\"Smith\",30]],\"total\":2,\"size\":2}",
+        formatter.format(response));
+  }
+
+  /** Hard per-response byte cap: a result whose serialized size exceeds the cap is rejected. */
+  @Test
+  void formatRejectsWhenResultExceedsByteCap() {
+    QueryResult response = manyRows(50);
+    // Tiny cap (10 bytes) so the first row already trips it; health-check interval huge so only the
+    // cap branch fires.
+    SimpleJsonResponseFormatter formatter =
+        new SimpleJsonResponseFormatter(COMPACT, new AlwaysHealthyMonitor(), 10L, Long.MAX_VALUE);
+    IllegalStateException e =
+        assertThrows(IllegalStateException.class, () -> formatter.format(response));
+    assertTrue(e.getMessage().contains("too large to serialize"));
+  }
+
+  /** Byte-interval heap poll: when the monitor reports unhealthy past the interval, reject. */
+  @Test
+  void formatRejectsWhenMonitorUnhealthyPastInterval() {
+    QueryResult response = manyRows(50);
+    // High cap (never the cap branch), tiny health-check interval (1 byte) so the monitor is polled
+    // after the first row, and an unhealthy monitor → rejection.
+    SimpleJsonResponseFormatter formatter =
+        new SimpleJsonResponseFormatter(COMPACT, new UnhealthyMonitor(), Long.MAX_VALUE, 1L);
+    IllegalStateException e =
+        assertThrows(IllegalStateException.class, () -> formatter.format(response));
+    assertTrue(e.getMessage().contains("Insufficient memory"));
+  }
+
+  /** A healthy monitor at a tiny interval is polled repeatedly and the response still completes. */
+  @Test
+  void formatCompletesWhenMonitorHealthyAtTinyInterval() {
+    QueryResult response =
+        new QueryResult(
+            schema,
+            Arrays.asList(
+                tupleValue(ImmutableMap.of("firstname", "John", "age", 20)),
+                tupleValue(ImmutableMap.of("firstname", "Smith", "age", 30))));
+    SimpleJsonResponseFormatter formatter =
+        new SimpleJsonResponseFormatter(COMPACT, new AlwaysHealthyMonitor(), Long.MAX_VALUE, 1L);
+    assertEquals(
+        "{\"schema\":[{\"name\":\"firstname\",\"type\":\"string\"},"
+            + "{\"name\":\"age\",\"type\":\"integer\"}],\"datarows\":"
+            + "[[\"John\",20],[\"Smith\",30]],\"total\":2,\"size\":2}",
+        formatter.format(response));
+  }
+
+  /** buildJsonObject is unreachable on the success path (format is overridden) — guards misuse. */
+  @Test
+  void buildJsonObjectThrows() {
+    SimpleJsonResponseFormatter formatter = new SimpleJsonResponseFormatter(COMPACT);
+    assertThrows(UnsupportedOperationException.class, () -> formatter.buildJsonObject(manyRows(1)));
+  }
+
+  /** Double / float cells go through the floating-point branch of writeValue. */
+  @Test
+  void formatResponseWithDoubleAndFloatValues() {
+    ExecutionEngine.Schema fpSchema =
+        new ExecutionEngine.Schema(
+            ImmutableList.of(
+                new ExecutionEngine.Schema.Column(
+                    "d", null, org.opensearch.sql.data.type.ExprCoreType.DOUBLE),
+                new ExecutionEngine.Schema.Column(
+                    "f", null, org.opensearch.sql.data.type.ExprCoreType.FLOAT)));
+    java.util.LinkedHashMap<String, ExprValue> row = new java.util.LinkedHashMap<>();
+    row.put("d", ExprValueUtils.doubleValue(1.5));
+    row.put("f", ExprValueUtils.floatValue(2.5f));
+    QueryResult response =
+        new QueryResult(fpSchema, Collections.singletonList(ExprTupleValue.fromExprValueMap(row)));
+    SimpleJsonResponseFormatter formatter = new SimpleJsonResponseFormatter(COMPACT);
+    assertEquals(
+        "{\"schema\":[{\"name\":\"d\",\"type\":\"double\"},{\"name\":\"f\",\"type\":\"float\"}],"
+            + "\"datarows\":[[1.5,2.5]],\"total\":1,\"size\":1}",
+        formatter.format(response));
+  }
+
+  /** Boolean cells go through the boolean branch of writeValue. */
+  @Test
+  void formatResponseWithBooleanValue() {
+    ExecutionEngine.Schema boolSchema =
+        new ExecutionEngine.Schema(
+            ImmutableList.of(
+                new ExecutionEngine.Schema.Column(
+                    "flag", null, org.opensearch.sql.data.type.ExprCoreType.BOOLEAN)));
+    QueryResult response =
+        new QueryResult(
+            boolSchema, Collections.singletonList(tupleValue(ImmutableMap.of("flag", true))));
+    SimpleJsonResponseFormatter formatter = new SimpleJsonResponseFormatter(COMPACT);
+    assertEquals(
+        "{\"schema\":[{\"name\":\"flag\",\"type\":\"boolean\"}],"
+            + "\"datarows\":[[true]],\"total\":1,\"size\":1}",
+        formatter.format(response));
+  }
+
+  /**
+   * When a profiling context is active, {@code QueryProfiling.current().finish()} returns a
+   * non-null profile and the formatter emits a "profile" object (the profile-present branch of
+   * writeJson).
+   */
+  @Test
+  void formatResponseEmitsProfileWhenProfilingActive() {
+    QueryResult response =
+        new QueryResult(
+            schema,
+            Collections.singletonList(tupleValue(ImmutableMap.of("firstname", "John", "age", 20))));
+    SimpleJsonResponseFormatter formatter = new SimpleJsonResponseFormatter(COMPACT);
+    String result =
+        org.opensearch.sql.monitor.profile.QueryProfiling.withCurrentContext(
+            new org.opensearch.sql.monitor.profile.DefaultProfileContext(),
+            () -> formatter.format(response));
+    assertTrue(result.contains("\"profile\""), "response must contain the profile object");
+    assertTrue(result.contains("\"datarows\":[[\"John\",20]]"), "datarows must still be present");
+  }
+
+  /**
+   * An IOException from the underlying writer is wrapped as an UncheckedIOException (the
+   * IOException catch in format()). Injected via the newResponseBuffer seam with a StringWriter
+   * that throws on close (JsonWriter.close() flushes/closes the delegate).
+   */
+  @Test
+  void formatWrapsIOExceptionAsUnchecked() {
+    QueryResult response =
+        new QueryResult(
+            schema,
+            Collections.singletonList(tupleValue(ImmutableMap.of("firstname", "John", "age", 20))));
+    SimpleJsonResponseFormatter formatter =
+        new SimpleJsonResponseFormatter(COMPACT) {
+          @Override
+          java.io.StringWriter newResponseBuffer(QueryResult r) {
+            return new java.io.StringWriter() {
+              @Override
+              public void close() throws java.io.IOException {
+                throw new java.io.IOException("boom");
+              }
+            };
+          }
+        };
+    java.io.UncheckedIOException e =
+        assertThrows(java.io.UncheckedIOException.class, () -> formatter.format(response));
+    assertTrue(e.getMessage().contains("Failed to serialize query response"));
+  }
+
+  private QueryResult manyRows(int n) {
+    List<ExprValue> rows = new java.util.ArrayList<>(n);
+    for (int i = 0; i < n; i++) {
+      rows.add(tupleValue(ImmutableMap.of("firstname", "name" + i, "age", i)));
+    }
+    return new QueryResult(schema, rows);
+  }
+
+  /** Test monitor that always reports unhealthy, to exercise the rejection branch. */
+  private static final class UnhealthyMonitor extends org.opensearch.sql.monitor.ResourceMonitor {
+    @Override
+    protected boolean isHealthyImpl() {
+      return false;
+    }
   }
 }
