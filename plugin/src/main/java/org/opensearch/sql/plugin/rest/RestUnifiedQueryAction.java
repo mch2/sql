@@ -419,7 +419,10 @@ public class RestUnifiedQueryAction {
       QueryType queryType,
       ProfileContext profileCtx,
       ActionListener<TransportPPLQueryResponse> transportListener) {
-    ResponseFormatter<QueryResult> formatter = new SimpleJsonResponseFormatter(PRETTY);
+    // Pass the heap monitor so the formatter polls it while materializing rows (the analytics route
+    // has no ResourceMonitorPlan to do this on the v2 next()-loop).
+    ResponseFormatter<QueryResult> formatter =
+        new SimpleJsonResponseFormatter(PRETTY, resourceMonitor);
     return new ResponseListener<QueryResponse>() {
       @Override
       public void onResponse(QueryResponse response) {
@@ -430,10 +433,10 @@ public class RestUnifiedQueryAction {
           profileCtx.setEnginePlan(toJsonElement(response.getProfile()));
         }
 
-        // Heap guard: fully materializing + Gson-serializing the result into one String can OOM the
-        // node for wide/large analytics results (the analytics path has no ResourceMonitorPlan). Bail
-        // out with a 429-style rejection if heap is already over plugins.query.memory_limit, instead
-        // of crashing while building the response.
+        // Fast fail-out: if the node is ALREADY over plugins.query.memory_limit before we even begin,
+        // reject now rather than start a serialization that will only add pressure. The primary,
+        // continuous guard lives inside SimpleJsonResponseFormatter's write loop (byte-interval heap
+        // poll + a hard per-response byte cap) — that's what actually bounds the buffer as it grows.
         if (!resourceMonitor.isHealthy()) {
           transportListener.onFailure(
               new IllegalStateException(
