@@ -237,7 +237,15 @@ public class SQLPlugin extends Plugin
             }
             cached[0] =
                 new RestUnifiedQueryAction(
-                    client, clusterService, executor, contextProvider, pluginSettings);
+                    client,
+                    clusterService,
+                    executor,
+                    contextProvider,
+                    pluginSettings,
+                    new org.opensearch.sql.opensearch.monitor.OpenSearchResourceMonitor(
+                        pluginSettings,
+                        new org.opensearch.sql.opensearch.monitor.OpenSearchMemoryHealthy(
+                            pluginSettings)));
           }
           return cached[0];
         };

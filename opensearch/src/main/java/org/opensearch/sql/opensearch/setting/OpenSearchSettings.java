@@ -213,6 +213,15 @@ public class OpenSearchSettings extends Settings {
           Setting.Property.NodeScope,
           Setting.Property.Dynamic);
 
+  // Hard per-response cap for the analytics streaming path (GuardedResponseWriter). Default 20% of
+  // max heap; accepts an absolute size ("512mb") or a percentage.
+  public static final Setting<?> ANALYTICS_MAX_RESPONSE_SIZE_SETTING =
+      Setting.memorySizeSetting(
+          Key.ANALYTICS_MAX_RESPONSE_SIZE.getKeyValue(),
+          "20%",
+          Setting.Property.NodeScope,
+          Setting.Property.Dynamic);
+
   public static final Setting<Integer> MAX_EXPRESSION_DEPTH_SETTING =
       Setting.intSetting(
           Key.MAX_EXPRESSION_DEPTH.getKeyValue(),
@@ -512,6 +521,12 @@ public class OpenSearchSettings extends Settings {
     register(
         settingBuilder,
         clusterSettings,
+        Key.ANALYTICS_MAX_RESPONSE_SIZE,
+        ANALYTICS_MAX_RESPONSE_SIZE_SETTING,
+        new Updater(Key.ANALYTICS_MAX_RESPONSE_SIZE));
+    register(
+        settingBuilder,
+        clusterSettings,
         Key.MAX_EXPRESSION_DEPTH,
         MAX_EXPRESSION_DEPTH_SETTING,
         new Updater(Key.MAX_EXPRESSION_DEPTH));
@@ -708,6 +723,7 @@ public class OpenSearchSettings extends Settings {
         .add(PPL_JOIN_SUBSEARCH_MAXOUT_SETTING)
         .add(QUERY_MEMORY_LIMIT_SETTING)
         .add(QUERY_SIZE_LIMIT_SETTING)
+        .add(ANALYTICS_MAX_RESPONSE_SIZE_SETTING)
         .add(QUERY_BUCKET_SIZE_SETTING)
         .add(METRICS_ROLLING_WINDOW_SETTING)
         .add(METRICS_ROLLING_INTERVAL_SETTING)

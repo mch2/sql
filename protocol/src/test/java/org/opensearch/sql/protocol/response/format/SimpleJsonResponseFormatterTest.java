@@ -28,7 +28,6 @@ import org.opensearch.sql.data.model.ExprTupleValue;
 import org.opensearch.sql.data.model.ExprValue;
 import org.opensearch.sql.data.model.ExprValueUtils;
 import org.opensearch.sql.executor.ExecutionEngine;
-import org.opensearch.sql.monitor.AlwaysHealthyMonitor;
 import org.opensearch.sql.protocol.response.QueryResult;
 
 class SimpleJsonResponseFormatterTest {
@@ -232,75 +231,26 @@ class SimpleJsonResponseFormatterTest {
         formatter.format(new RuntimeException("This is an exception")));
   }
 
-  // ─── streaming writer + heap guards ────────────────────────────────────────────
+  // ─── streaming + serialization fidelity ─────────────────────────────────────────
 
-  /** Passing an explicit (healthy) monitor produces the exact same output as the default ctor. */
+  /** The streaming Writer overload produces byte-identical output to the String overload. */
   @Test
-  void formatResponseWithExplicitHealthyMonitor() {
+  void formatToWriterMatchesStringOverload() throws java.io.IOException {
     QueryResult response =
         new QueryResult(
             schema,
             Arrays.asList(
                 tupleValue(ImmutableMap.of("firstname", "John", "age", 20)),
                 tupleValue(ImmutableMap.of("firstname", "Smith", "age", 30))));
-    SimpleJsonResponseFormatter formatter =
-        new SimpleJsonResponseFormatter(COMPACT, new AlwaysHealthyMonitor());
-    assertEquals(
-        "{\"schema\":[{\"name\":\"firstname\",\"type\":\"string\"},"
-            + "{\"name\":\"age\",\"type\":\"integer\"}],\"datarows\":"
-            + "[[\"John\",20],[\"Smith\",30]],\"total\":2,\"size\":2}",
-        formatter.format(response));
-  }
-
-  /** Hard per-response byte cap: a result whose serialized size exceeds the cap is rejected. */
-  @Test
-  void formatRejectsWhenResultExceedsByteCap() {
-    QueryResult response = manyRows(50);
-    // Tiny cap (10 bytes) so the first row already trips it; health-check interval huge so only the
-    // cap branch fires.
-    SimpleJsonResponseFormatter formatter =
-        new SimpleJsonResponseFormatter(COMPACT, new AlwaysHealthyMonitor(), 10L, Long.MAX_VALUE);
-    IllegalStateException e =
-        assertThrows(IllegalStateException.class, () -> formatter.format(response));
-    assertTrue(e.getMessage().contains("too large to serialize"));
-  }
-
-  /** Byte-interval heap poll: when the monitor reports unhealthy past the interval, reject. */
-  @Test
-  void formatRejectsWhenMonitorUnhealthyPastInterval() {
-    QueryResult response = manyRows(50);
-    // High cap (never the cap branch), tiny health-check interval (1 byte) so the monitor is polled
-    // after the first row, and an unhealthy monitor → rejection.
-    SimpleJsonResponseFormatter formatter =
-        new SimpleJsonResponseFormatter(COMPACT, new UnhealthyMonitor(), Long.MAX_VALUE, 1L);
-    IllegalStateException e =
-        assertThrows(IllegalStateException.class, () -> formatter.format(response));
-    assertTrue(e.getMessage().contains("Insufficient memory"));
-  }
-
-  /** A healthy monitor at a tiny interval is polled repeatedly and the response still completes. */
-  @Test
-  void formatCompletesWhenMonitorHealthyAtTinyInterval() {
-    QueryResult response =
-        new QueryResult(
-            schema,
-            Arrays.asList(
-                tupleValue(ImmutableMap.of("firstname", "John", "age", 20)),
-                tupleValue(ImmutableMap.of("firstname", "Smith", "age", 30))));
-    SimpleJsonResponseFormatter formatter =
-        new SimpleJsonResponseFormatter(COMPACT, new AlwaysHealthyMonitor(), Long.MAX_VALUE, 1L);
-    assertEquals(
-        "{\"schema\":[{\"name\":\"firstname\",\"type\":\"string\"},"
-            + "{\"name\":\"age\",\"type\":\"integer\"}],\"datarows\":"
-            + "[[\"John\",20],[\"Smith\",30]],\"total\":2,\"size\":2}",
-        formatter.format(response));
-  }
-
-  /** buildJsonObject is unreachable on the success path (format is overridden) — guards misuse. */
-  @Test
-  void buildJsonObjectThrows() {
     SimpleJsonResponseFormatter formatter = new SimpleJsonResponseFormatter(COMPACT);
-    assertThrows(UnsupportedOperationException.class, () -> formatter.buildJsonObject(manyRows(1)));
+    java.io.StringWriter sw = new java.io.StringWriter();
+    formatter.format(response, sw);
+    assertEquals(formatter.format(response), sw.toString());
+    assertEquals(
+        "{\"schema\":[{\"name\":\"firstname\",\"type\":\"string\"},"
+            + "{\"name\":\"age\",\"type\":\"integer\"}],\"datarows\":"
+            + "[[\"John\",20],[\"Smith\",30]],\"total\":2,\"size\":2}",
+        sw.toString());
   }
 
   /** Double / float cells go through the floating-point branch of writeValue. */
@@ -364,46 +314,98 @@ class SimpleJsonResponseFormatterTest {
   }
 
   /**
-   * An IOException from the underlying writer is wrapped as an UncheckedIOException (the
-   * IOException catch in format()). Injected via the newResponseBuffer seam with a StringWriter
-   * that throws on close (JsonWriter.close() flushes/closes the delegate).
+   * PRETTY style: the embedded profile JSON is pretty-printed (the pretty branch of writeProfile).
    */
+  @Test
+  void formatEmitsPrettyProfileWhenPretty() {
+    QueryResult response =
+        new QueryResult(
+            schema,
+            Collections.singletonList(tupleValue(ImmutableMap.of("firstname", "John", "age", 20))));
+    SimpleJsonResponseFormatter formatter = new SimpleJsonResponseFormatter(PRETTY);
+    String result =
+        org.opensearch.sql.monitor.profile.QueryProfiling.withCurrentContext(
+            new org.opensearch.sql.monitor.profile.DefaultProfileContext(),
+            () -> formatter.format(response));
+    assertTrue(result.contains("\"profile\""), "response must contain the profile object");
+    // pretty printing → the profile object contains newline+indent, not a compact one-liner.
+    assertTrue(
+        result.contains("\"profile\": {\n"), "profile must be pretty-printed under PRETTY style");
+  }
+
+  /** contentType is JSON. */
+  @Test
+  void contentTypeIsJson() {
+    assertEquals(
+        "application/json; charset=UTF-8", new SimpleJsonResponseFormatter(COMPACT).contentType());
+  }
+
+  /**
+   * A BigDecimal with a fractional part and a BigInteger beyond Long.MAX_VALUE serialize EXACTLY —
+   * regression for the old Double/Float-vs-longValue() branching, which truncated both.
+   */
+  @Test
+  void formatPreservesBigDecimalAndBigInteger() {
+    ExecutionEngine.Schema numSchema =
+        new ExecutionEngine.Schema(
+            ImmutableList.of(
+                new ExecutionEngine.Schema.Column(
+                    "dec", null, org.opensearch.sql.data.type.ExprCoreType.DOUBLE),
+                new ExecutionEngine.Schema.Column(
+                    "big", null, org.opensearch.sql.data.type.ExprCoreType.LONG)));
+    // QueryResult iterates Object[] rows directly; construct raw Number cells to exercise
+    // writeValue.
+    java.math.BigInteger big =
+        java.math.BigInteger.valueOf(Long.MAX_VALUE).add(java.math.BigInteger.TEN);
+    QueryResult response =
+        new QueryResult(numSchema, Collections.emptyList()) {
+          @Override
+          public java.util.Iterator<Object[]> iterator() {
+            return Collections.singletonList(new Object[] {new java.math.BigDecimal("2.75"), big})
+                .iterator();
+          }
+
+          @Override
+          public java.util.Map<String, String> columnNameTypes() {
+            return ImmutableMap.of("dec", "double", "big", "long");
+          }
+
+          @Override
+          public int size() {
+            return 1;
+          }
+        };
+    SimpleJsonResponseFormatter formatter = new SimpleJsonResponseFormatter(COMPACT);
+    assertEquals(
+        "{\"schema\":[{\"name\":\"dec\",\"type\":\"double\"},{\"name\":\"big\",\"type\":\"long\"}],"
+            + "\"datarows\":[[2.75,9223372036854775817]],\"total\":1,\"size\":1}",
+        formatter.format(response));
+  }
+
+  /** IOException from the underlying Writer is wrapped as UncheckedIOException. */
   @Test
   void formatWrapsIOExceptionAsUnchecked() {
     QueryResult response =
         new QueryResult(
             schema,
             Collections.singletonList(tupleValue(ImmutableMap.of("firstname", "John", "age", 20))));
-    SimpleJsonResponseFormatter formatter =
-        new SimpleJsonResponseFormatter(COMPACT) {
+    SimpleJsonResponseFormatter formatter = new SimpleJsonResponseFormatter(COMPACT);
+    java.io.Writer throwing =
+        new java.io.Writer() {
           @Override
-          java.io.StringWriter newResponseBuffer(QueryResult r) {
-            return new java.io.StringWriter() {
-              @Override
-              public void close() throws java.io.IOException {
-                throw new java.io.IOException("boom");
-              }
-            };
+          public void write(char[] cbuf, int off, int len) throws java.io.IOException {
+            throw new java.io.IOException("boom");
           }
+
+          @Override
+          public void flush() {}
+
+          @Override
+          public void close() {}
         };
     java.io.UncheckedIOException e =
-        assertThrows(java.io.UncheckedIOException.class, () -> formatter.format(response));
+        assertThrows(
+            java.io.UncheckedIOException.class, () -> formatter.format(response, throwing));
     assertTrue(e.getMessage().contains("Failed to serialize query response"));
-  }
-
-  private QueryResult manyRows(int n) {
-    List<ExprValue> rows = new java.util.ArrayList<>(n);
-    for (int i = 0; i < n; i++) {
-      rows.add(tupleValue(ImmutableMap.of("firstname", "name" + i, "age", i)));
-    }
-    return new QueryResult(schema, rows);
-  }
-
-  /** Test monitor that always reports unhealthy, to exercise the rejection branch. */
-  private static final class UnhealthyMonitor extends org.opensearch.sql.monitor.ResourceMonitor {
-    @Override
-    protected boolean isHealthyImpl() {
-      return false;
-    }
   }
 }

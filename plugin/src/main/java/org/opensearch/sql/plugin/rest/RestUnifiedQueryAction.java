@@ -40,6 +40,7 @@ import org.opensearch.sql.ast.tree.UnresolvedPlan;
 import org.opensearch.sql.calcite.CalcitePlanContext;
 import org.opensearch.sql.calcite.plan.rel.LogicalSystemLimit;
 import org.opensearch.sql.common.response.ResponseListener;
+import org.opensearch.sql.common.setting.Settings.Key;
 import org.opensearch.sql.executor.ExecutionEngine.QueryResponse;
 import org.opensearch.sql.executor.QueryType;
 import org.opensearch.sql.executor.analytics.AnalyticsExecutionEngine;
@@ -47,11 +48,8 @@ import org.opensearch.sql.lang.LangSpec;
 import org.opensearch.sql.monitor.ResourceMonitor;
 import org.opensearch.sql.monitor.profile.ProfileContext;
 import org.opensearch.sql.monitor.profile.QueryProfiling;
-import org.opensearch.sql.opensearch.monitor.OpenSearchMemoryHealthy;
-import org.opensearch.sql.opensearch.monitor.OpenSearchResourceMonitor;
 import org.opensearch.sql.plugin.transport.TransportPPLQueryResponse;
 import org.opensearch.sql.protocol.response.QueryResult;
-import org.opensearch.sql.protocol.response.format.ResponseFormatter;
 import org.opensearch.sql.protocol.response.format.SimpleJsonResponseFormatter;
 import org.opensearch.sql.utils.SystemIndexUtils;
 import org.opensearch.tasks.Task;
@@ -73,11 +71,9 @@ public class RestUnifiedQueryAction {
   private final org.opensearch.analytics.EngineContextProvider contextProvider;
   private final org.opensearch.sql.common.setting.Settings pluginSettings;
   // Heap guard for the analytics-engine result path. The analytics engine bypasses the v2
-  // PhysicalPlan operator tree, so the {@code ResourceMonitorPlan} that polls this monitor on the
-  // v2 next()-loop never runs here — the full result is materialized (Object[] rows) and then
-  // Gson-serialized into one String with no heap check, which OOMs the node on wide/large results.
-  // Reuse the same monitor v2 uses (heap usage vs. plugins.query.memory_limit) and check it before
-  // serializing the response.
+  // PhysicalPlan operator tree, so v2's {@code ResourceMonitorPlan} never polls the heap here — the
+  // full result is materialized and serialized into one String. The SAME v2 monitor is injected and
+  // a GuardedResponseWriter polls it (and enforces a hard per-response cap) as the buffer grows.
   private final ResourceMonitor resourceMonitor;
 
   public RestUnifiedQueryAction(
@@ -85,14 +81,14 @@ public class RestUnifiedQueryAction {
       ClusterService clusterService,
       QueryPlanExecutor<RelNode, Iterable<Object[]>> planExecutor,
       org.opensearch.analytics.EngineContextProvider contextProvider,
-      org.opensearch.sql.common.setting.Settings pluginSettings) {
+      org.opensearch.sql.common.setting.Settings pluginSettings,
+      ResourceMonitor resourceMonitor) {
     this.client = client;
     this.clusterService = clusterService;
     this.analyticsEngine = new AnalyticsExecutionEngine(planExecutor);
     this.contextProvider = contextProvider;
     this.pluginSettings = pluginSettings;
-    this.resourceMonitor =
-        new OpenSearchResourceMonitor(pluginSettings, new OpenSearchMemoryHealthy(pluginSettings));
+    this.resourceMonitor = resourceMonitor;
   }
 
   /**
@@ -419,10 +415,7 @@ public class RestUnifiedQueryAction {
       QueryType queryType,
       ProfileContext profileCtx,
       ActionListener<TransportPPLQueryResponse> transportListener) {
-    // Pass the heap monitor so the formatter polls it while materializing rows (the analytics route
-    // has no ResourceMonitorPlan to do this on the v2 next()-loop).
-    ResponseFormatter<QueryResult> formatter =
-        new SimpleJsonResponseFormatter(PRETTY, resourceMonitor);
+    SimpleJsonResponseFormatter formatter = new SimpleJsonResponseFormatter(PRETTY);
     return new ResponseListener<QueryResponse>() {
       @Override
       public void onResponse(QueryResponse response) {
@@ -433,10 +426,12 @@ public class RestUnifiedQueryAction {
           profileCtx.setEnginePlan(toJsonElement(response.getProfile()));
         }
 
-        // Fast fail-out: if the node is ALREADY over plugins.query.memory_limit before we even begin,
-        // reject now rather than start a serialization that will only add pressure. The primary,
-        // continuous guard lives inside SimpleJsonResponseFormatter's write loop (byte-interval heap
-        // poll + a hard per-response byte cap) — that's what actually bounds the buffer as it grows.
+        // Fast fail-out: if the node is ALREADY over the heap limit before we begin, reject now
+        // rather
+        // than start a serialization that only adds pressure. The continuous guard is the
+        // GuardedResponseWriter below (per-row heap poll + hard per-response cap). Same exception
+        // type
+        // as the guard so both map to the same status.
         if (!resourceMonitor.isHealthy()) {
           transportListener.onFailure(
               new IllegalStateException(
@@ -444,16 +439,24 @@ public class RestUnifiedQueryAction {
                       + " the 'plugins.query.memory_limit' setting."));
           return;
         }
-        String result =
-            QueryProfiling.withCurrentContext(
-                profileCtx,
-                () ->
-                    formatter.format(
-                        new QueryResult(
-                            response.getSchema(),
-                            response.getResults(),
-                            response.getCursor(),
-                            langSpec)));
+
+        org.opensearch.core.common.unit.ByteSizeValue cap =
+            pluginSettings.getSettingValue(Key.ANALYTICS_MAX_RESPONSE_SIZE);
+        long capChars = cap != null ? cap.getBytes() : Long.MAX_VALUE;
+        java.io.StringWriter sw =
+            new java.io.StringWriter(Math.min(response.getResults().size() * 64, 1024 * 1024));
+        GuardedResponseWriter guarded =
+            new GuardedResponseWriter(sw, resourceMonitor, capChars, CHARS_PER_HEALTH_CHECK);
+        QueryResult queryResult =
+            new QueryResult(
+                response.getSchema(), response.getResults(), response.getCursor(), langSpec);
+        QueryProfiling.withCurrentContext(
+            profileCtx,
+            () -> {
+              formatter.format(queryResult, guarded);
+              return null;
+            });
+        String result = sw.toString();
         if (response.getError() != null) {
           result = appendError(result, response.getError());
         }
@@ -466,6 +469,9 @@ public class RestUnifiedQueryAction {
       }
     };
   }
+
+  /** Poll the heap monitor each time the response buffer grows past another 4 MB. */
+  private static final long CHARS_PER_HEALTH_CHECK = 4L * 1024 * 1024;
 
   private static JsonElement toJsonElement(QueryProfile profile) {
     try {
