@@ -92,15 +92,14 @@ public class RestUnifiedQueryAction {
     // MetadataCreateIndexService), so every queryable target is analytics-eligible. Skip
     // the per-index lookup — it doesn't work for aliases, wildcards, comma-lists, or data
     // streams (Metadata#index() only resolves concrete names).
-    Settings settings = clusterService.getSettings();
-    System.out.println(settings);
-    if (true) {
+    Settings clusterSettings = clusterService.getSettings();
+    if ("composite".equals(clusterSettings.get("cluster.pluggable.dataformat"))) {
       return true;
     }
     try (UnifiedQueryContext context = buildParsingContext(queryType)) {
       return extractIndexName(query, queryType, context)
           .map(this::stripSchemaPrefix)
-          .map(this::isPluggableDataformatIndex)
+          .map(name -> isPluggableDataformatIndex(name) || isAnalyticsScanIndex(name))
           .orElse(false);
     } catch (Exception e) {
       return false;
@@ -120,6 +119,19 @@ public class RestUnifiedQueryAction {
     var settings = indexMetadata.getSettings();
     return IndexSettings.PLUGGABLE_DATAFORMAT_ENABLED_SETTING.get(settings)
         && "composite".equals(IndexSettings.PLUGGABLE_DATAFORMAT_VALUE_SETTING.get(settings));
+  }
+
+  /**
+   * A plain (normal InternalEngine) index opted into analytics scanning via {@code
+   * index.analytics.scan.enabled} — served by the analytics engine through the shard reader bridge
+   * rather than the Calcite→DSL path (see analytics-plain-index-spec.md in OpenSearch core).
+   */
+  private boolean isAnalyticsScanIndex(String indexName) {
+    var indexMetadata = clusterService.state().metadata().index(indexName);
+    if (indexMetadata == null) {
+      return false;
+    }
+    return indexMetadata.getSettings().getAsBoolean("index.analytics.scan.enabled", false);
   }
 
   /** Execute a query through the unified query pipeline on the sql-worker thread pool. */
