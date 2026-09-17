@@ -1616,7 +1616,17 @@ public class CalciteRelNodeVisitor extends AbstractNodeVisitor<RelNode, CalciteP
         distinctRefsOfCounts = refsPerCount.stream().flatMap(List::stream).distinct().toList();
       }
       if (distinctRefsOfCounts.size() == 1 && refsPerCount.stream().noneMatch(List::isEmpty)) {
-        context.relBuilder.filter(context.relBuilder.isNotNull(distinctRefsOfCounts.getFirst()));
+        // distinctRefsOfCounts may have been mapped THROUGH the Project above, which expresses it
+        // against that Project's input. The mapping exists only to recognise two aliases of one
+        // underlying column as one; the filter is stacked ABOVE the Project, so its reference must be
+        // in the Project's OUTPUT frame. Using the mapped index there is out of range whenever the
+        // Project narrows (`fields svc | stats count(svc)` throws "index (1) must be less than size
+        // (1)" from a later Calcite rule), and silently wrong when it merely reorders — the filter then
+        // tests a different column's nullness than the one being counted. refsPerCount is already in
+        // the right frame, and reaching this branch means every entry denotes the same column, so any
+        // one of them gives the same predicate.
+        RexInputRef filterRef = refsPerCount.stream().flatMap(List::stream).findFirst().orElseThrow();
+        context.relBuilder.filter(context.relBuilder.isNotNull(filterRef));
       }
     }
 
