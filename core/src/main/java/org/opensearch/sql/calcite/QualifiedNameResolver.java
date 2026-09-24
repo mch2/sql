@@ -214,7 +214,12 @@ public class QualifiedNameResolver {
       int foundInput = findInputContainingFieldName(inputCount, inputFieldNames, fieldName);
       if (foundInput != -1) {
         RexNode fieldNode = context.relBuilder.field(inputCount, foundInput, fieldName);
-        return Optional.of(resolveFieldAccess(context, parts, 0, length, fieldNode));
+        RexNode resolved = resolveFieldAccess(context, parts, 0, length, fieldNode);
+        if (resolved != null) {
+          return Optional.of(resolved);
+        }
+        // This prefix matched a column but the rest of the path is not in its struct. A shorter
+        // prefix may still match a different column, so keep walking rather than giving up here.
       }
     }
     return Optional.empty();
@@ -325,6 +330,10 @@ public class QualifiedNameResolver {
    * one field name, finds nothing, and throws {@code AssertionError: Cannot infer type of field ...
    * within ROW type} — an Error, so it escapes the {@code catch (Exception)} in the resolve loop and
    * surfaces as a 500. That made every struct path deeper than one segment unreachable.
+   *
+   * @return the resolved node, or {@code null} when the path stopped inside a ROW on a segment that
+   *     names no child of it — an unresolved path rather than a usable node, so the caller keeps
+   *     looking and ultimately reports a normal not-found
    */
   private static RexNode resolveFieldAccess(
       CalcitePlanContext context, List<String> parts, int start, int length, RexNode field) {
@@ -340,6 +349,14 @@ public class QualifiedNameResolver {
     }
     if (remaining == parts.size()) {
       return current;
+    }
+    if (current.getType().isStruct()) {
+      // Descent stopped on a segment that names no child of this ROW. Joining the remainder into an
+      // ITEM key here would rebuild the very shape this method exists to avoid -- ITEM(<ROW>, 'x')
+      // makes SqlItemOperator throw the AssertionError described above, which escapes the caller's
+      // catch (Exception) as a 500. Report it as unresolved so it reaches the ordinary
+      // "Field [...] not found" path instead.
+      return null;
     }
     return createItemAccess(current, joinParts(parts, remaining, parts.size() - remaining), context);
   }
